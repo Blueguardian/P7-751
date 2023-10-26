@@ -50,14 +50,21 @@ masked_blue = cv2.bitwise_and(im_array,im_array,mask=mask_blue)
 masked_green = cv2.bitwise_and(im_array,im_array,mask=mask_green)
 masked_yellow = cv2.bitwise_and(im_array,im_array,mask=mask_yellow)
 
+
+masked_red_median = cv2.medianBlur(masked_red,3)
+masked_red_median_opening = cv2.morphologyEx(masked_red_median, cv2.MORPH_OPEN, np.ones((5,5),np.uint8))
+masked_blue_median = cv2.medianBlur(masked_blue,3)
+masked_blue_median_opening = cv2.morphologyEx(masked_blue_median, cv2.MORPH_OPEN, np.ones((5,5),np.uint8))
 masked_green_median = cv2.medianBlur(masked_green,3)
 masked_green_median_opening = cv2.morphologyEx(masked_green_median, cv2.MORPH_OPEN, np.ones((5,5),np.uint8))
+masked_yellow_median = cv2.medianBlur(masked_yellow,3)
+masked_yellow_median_opening = cv2.morphologyEx(masked_yellow_median, cv2.MORPH_OPEN, np.ones((5,5),np.uint8))
 
 
-mask_red_filtered = np.transpose(np.nonzero(masked_red[:,:,0] > 0)) 
-mask_blue_filtered = np.transpose(np.nonzero(masked_blue[:,:,0] > 0)) 
+mask_red_filtered = np.transpose(np.nonzero(masked_red_median_opening[:,:,0] > 0)) 
+mask_blue_filtered = np.transpose(np.nonzero(masked_blue_median_opening[:,:,0] > 0)) 
 mask_green_filtered = np.transpose(np.nonzero(masked_green_median_opening[:,:,0] > 0)) 
-mask_yellow_filtered = np.transpose(np.nonzero(masked_yellow[:,:,0] > 0)) 
+mask_yellow_filtered = np.transpose(np.nonzero(masked_yellow_median_opening[:,:,0] > 0)) 
 #print(mask_red_filtered.shape)
 
 print("Max x:" + str(np.max(mask_red_filtered[:, 0])))
@@ -102,18 +109,19 @@ print(green_x_max,green_x_min)
 
 res_image = masked_red + masked_blue + masked_yellow + masked_green
 
-res_image_circle_red = cv2.circle(masked_red,(red_center[1],red_center[0]),30,(255,255,255),-60)
-res_image_circle_blue = cv2.circle(masked_blue,(blue_center[1],blue_center[0]),30,(255,255,255),-60)
-res_image_circle_green = cv2.circle(masked_green,(green_center[1],green_center[0]),30,(255,255,255),-60)
-res_image_circle_yellow = cv2.circle(masked_yellow,(yellow_center[1],yellow_center[0]),30,(255,255,255),-60)
+res_image_circle_red = cv2.circle(masked_red_median_opening,(red_center[1],red_center[0]),30,(255,255,255),-60)
+res_image_circle_blue = cv2.circle(masked_blue_median_opening,(blue_center[1],blue_center[0]),30,(255,255,255),-60)
+res_image_circle_green = cv2.circle(masked_green_median_opening,(green_center[1],green_center[0]),30,(255,255,255),-60)
+res_image_circle_yellow = cv2.circle(masked_yellow_median_opening,(yellow_center[1],yellow_center[0]),30,(255,255,255),-60)
 
 res_image_circle = res_image_circle_red + res_image_circle_blue + res_image_circle_green + res_image_circle_yellow
 
-median = cv2.medianBlur(res_image, 5)
-#cv2.imshow("circle", res_image_circle)
-#cv2.waitKey(0)
-cv2.imshow("green_dot",res_image_circle_green)
+#median = cv2.medianBlur(res_image, 5)
+
+cv2.imshow("circle", res_image_circle)
 cv2.waitKey(0)
+#cv2.imshow("green_dot",res_image_circle_green)
+#cv2.waitKey(0)
 #cv2.imshow("masked",res_image)
 #cv2.waitKey(0)
 #cv2.imshow("MedianBlured",median)
