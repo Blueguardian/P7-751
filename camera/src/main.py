@@ -3,6 +3,7 @@ from picamera2 import Picamera2, Preview
 from libcamera import ColorSpace
 from PIL import Image
 import numpy as np
+from matplotlib import pyplot as plt
 
 def take_pic():
     picam2 = Picamera2()
@@ -19,20 +20,104 @@ def take_pic():
 
     print(reg_image.shape)
 
-    picam2.switch_mode_and_capture_file(camera_config,"camera/src/Image/image.jpg")
+    picam2.switch_mode_and_capture_file(camera_config,"camera/src/Image/blueimage.jpg")
 
-    
+image_center = [int(2464/2),int(3280/2)]    
 
-im = Image.open(r"/home/g751/Desktop/Project/P7-751/camera/src/Image/image.jpg")
+im = cv2.imread("/home/g751/Desktop/Project/P7-751/camera/src/Image/newimage.jpg")
 
-im_array = np.array(im)
+im_rgb = cv2.cvtColor(im,cv2.COLOR_RGB2BGR)
+im2 = Image.open("/home/g751/Desktop/Project/P7-751/camera/src/Image/newimage.jpg")
+im_blue = cv2.imread("/home/g751/Desktop/Project/P7-751/camera/src/Image/blueimage.jpg")
+
+im_array = np.array(im_rgb)
+im2_array = np.array(im2)
+im_blue_array = np.array(im_blue)
+
+im_array_rg = np.array(im_rgb)
 
 print(im_array.shape)
+print("array 1: ", im_array_rg)
+print("array 2: ",im2_array)
+
+# MIN_MATCH_COUNT = 1
+
+# sift = cv2.SIFT_create()
+
+# kp1, des1 = sift.detectAndCompute(im_array, None)
+# kp2, des2 = sift.detectAndCompute(im_blue_array, None)
+
+# FLANN_INDEX_KDTREE = 1
+# index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+# search_params = dict(checks = 100)
+
+# flann = cv2.FlannBasedMatcher(index_params, search_params)
+
+# matches = flann.knnMatch(des1, des2, k=2)
+
+#good = []
+
+# for m,n in matches:
+#     if m.distance < 0.7*n.distance:
+#         good.append(m)
+
+# if len(good)> MIN_MATCH_COUNT:
+#     src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1,1,2)
+#     dst_pts = np.float32([kp1[m.trainIdx].pt for m in good]).reshape(-1,1,2)
+
+#     M, mask = cv2.findHomography(src_pts, cv2.RANSAC, 5.0)
+#     matchesMask = mask.ravel().tolist()
+
+#     h,w = im_array.shape
+#     pts = np.float32([[0,0],[0,h-1],[w-1,h-1],[w-1,0]]).reshape(-1,1,2)
+#     dst = cv2.perspectiveTransform(pts,M)
+
+#     im_blue_array = cv2.polylines(im_blue_array,[np.int32(dst)],True,255,3,cv2.LINE_AA)
+
+#else:
+ #   print("Not enough matches found - {}/{}".format(len(good),MIN_MATCH_COUNT))
+#matchesMask = None
+
+# draw_params = dict(matchColor = (0,255,0),
+#     singlePointColor = None,
+#     matchesMask = matchesMask,
+#     flags = 2)
+
+# img3 = cv2.drawMatches(im_array,kp1,im_blue_array,kp2, good,None,**draw_params)
+
+# plt.imshow(img3,'gray'),plt.show
+
+
+
+threshold = 0.8
+
+im_array_R, im_array_G, im_array_B = cv2.split(im)
+im_blue_array_R, im_blue_array_G, im_blue_array_B = cv2.split(im_blue)
+
+resultB = cv2.matchTemplate(im_array_R,im_blue_array_R, cv2.TM_SQDIFF)
+resultG = cv2.matchTemplate(im_array_G,im_blue_array_G, cv2.TM_SQDIFF)
+resultR = cv2.matchTemplate(im_array_B,im_blue_array_B, cv2.TM_SQDIFF)
+
+result = resultB + resultG + resultR
+
+print(result)
+loc = np.where(result >= 3*threshold)
+print("loc:",loc)
+#print(loc.index(0))
+
+min_idk_x = np.min(loc.index(0)[:])
+max_idk_x = np.max(loc.index(0)[:])
+min_idk_y = np.min(loc.index(1)[:])
+max_idk_y = np.max(loc.index(1)[:])
+
+print(min_idk_x, max_idk_x, min_idk_y, max_idk_y)
+
+
 
 lower_red = np.array([150,0,0], dtype="uint8")
 upper_red = np.array([255,75,75], dtype="uint8")
-lower_blue = np.array([0,0,150], dtype="uint8")
-upper_blue = np.array([75,75,255], dtype="uint8")
+lower_blue = np.array([0,0,100], dtype="uint8")
+upper_blue = np.array([100,100,255], dtype="uint8")
 lower_green = np.array([0,75,0], dtype="uint8")
 upper_green = np.array([75,255,75], dtype="uint8")
 lower_yellow = np.array([150,150,0], dtype="uint8")
@@ -52,13 +137,13 @@ masked_yellow = cv2.bitwise_and(im_array,im_array,mask=mask_yellow)
 
 
 masked_red_median = cv2.medianBlur(masked_red,3)
-masked_red_median_opening = cv2.morphologyEx(masked_red_median, cv2.MORPH_OPEN, np.ones((5,5),np.uint8))
+masked_red_median_opening = cv2.morphologyEx(masked_red_median, cv2.MORPH_OPEN, np.ones((7,7),np.uint8))
 masked_blue_median = cv2.medianBlur(masked_blue,3)
-masked_blue_median_opening = cv2.morphologyEx(masked_blue_median, cv2.MORPH_OPEN, np.ones((5,5),np.uint8))
+masked_blue_median_opening = cv2.morphologyEx(masked_blue_median, cv2.MORPH_OPEN, np.ones((7,7),np.uint8))
 masked_green_median = cv2.medianBlur(masked_green,3)
-masked_green_median_opening = cv2.morphologyEx(masked_green_median, cv2.MORPH_OPEN, np.ones((5,5),np.uint8))
+masked_green_median_opening = cv2.morphologyEx(masked_green_median, cv2.MORPH_OPEN, np.ones((7,7),np.uint8))
 masked_yellow_median = cv2.medianBlur(masked_yellow,3)
-masked_yellow_median_opening = cv2.morphologyEx(masked_yellow_median, cv2.MORPH_OPEN, np.ones((5,5),np.uint8))
+masked_yellow_median_opening = cv2.morphologyEx(masked_yellow_median, cv2.MORPH_OPEN, np.ones((7,7),np.uint8))
 
 
 mask_red_filtered = np.transpose(np.nonzero(masked_red_median_opening[:,:,0] > 0)) 
@@ -66,6 +151,15 @@ mask_blue_filtered = np.transpose(np.nonzero(masked_blue_median_opening[:,:,0] >
 mask_green_filtered = np.transpose(np.nonzero(masked_green_median_opening[:,:,0] > 0)) 
 mask_yellow_filtered = np.transpose(np.nonzero(masked_yellow_median_opening[:,:,0] > 0)) 
 #print(mask_red_filtered.shape)
+
+# cv2.imshow("blue",masked_blue)
+# cv2.waitKey(0)
+# cv2.imshow("red",masked_red)
+# cv2.waitKey(0)
+# cv2.imshow("green",masked_green)
+# cv2.waitKey(0)
+# cv2.imshow("yellow",masked_yellow)
+# cv2.waitKey(0)
 
 print("Max x:" + str(np.max(mask_red_filtered[:, 0])))
 print("Min x:" + str(np.min(mask_red_filtered[:, 0])))
@@ -114,7 +208,15 @@ res_image_circle_blue = cv2.circle(masked_blue_median_opening,(blue_center[1],bl
 res_image_circle_green = cv2.circle(masked_green_median_opening,(green_center[1],green_center[0]),30,(255,255,255),-60)
 res_image_circle_yellow = cv2.circle(masked_yellow_median_opening,(yellow_center[1],yellow_center[0]),30,(255,255,255),-60)
 
-res_image_circle = res_image_circle_red + res_image_circle_blue + res_image_circle_green + res_image_circle_yellow
+center_point = [int((red_center[1] + blue_center[1] + green_center[1] + yellow_center[1])/4), int((red_center[0] + blue_center[0] + green_center[0] + yellow_center[0])/4)]
+
+res_image_circle_center = cv2.circle(masked_yellow_median_opening,(center_point[0],center_point[1]),30,(255,255,255),-60)
+
+res_image_center = cv2.circle(masked_yellow_median_opening,(image_center[1],image_center[0]),30,(0,0,255),-60)
+
+res_image_circle = res_image_circle_red + res_image_circle_blue + res_image_circle_green + res_image_circle_yellow + res_image_circle_center + res_image_center
+
+
 
 #median = cv2.medianBlur(res_image, 5)
 
