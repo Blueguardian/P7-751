@@ -26,28 +26,27 @@ def take_pic():
 image_center = [int(2464/2),int(3280/2)]    
 
 #im = cv2.imread("/home/g751/Desktop/Project/P7-751/camera/src/Image/newimage.jpg")
-im = cv2.imread("/home/christian/Drone_project/P7-751/camera/src/Image/newimage.jpg")
+#im = cv2.imread("/home/christian/Drone_project/P7-751/camera/src/Image/newimage.jpg")
 
-im_rgb = cv2.cvtColor(im,cv2.COLOR_RGB2BGR)
+#im_rgb = cv2.cvtColor(im,cv2.COLOR_RGB2BGR)
 
 #im2 = Image.open("/home/g751/Desktop/Project/P7-751/camera/src/Image/newimage.jpg")
 #im_blue = cv2.imread("/home/g751/Desktop/Project/P7-751/camera/src/Image/blueimage.jpg")
 
-im2 = Image.open("/home/christian/Drone_project/P7-751/camera/src/Image/newimage.jpg")
+im = Image.open("/home/christian/Drone_project/P7-751/camera/src/Image/image.jpg")
 im_blue = Image.open("/home/christian/Drone_project/P7-751/camera/src/Image/blueimage.jpg")
 im_red = Image.open("/home/christian/Drone_project/P7-751/camera/src/Image/RED.png")
+im_green = Image.open("/home/christian/Drone_project/P7-751/camera/src/Image/GREEN.png")
 
 
-im_array = np.array(im_rgb)
-im2_array = np.array(im2)
+im_array = np.array(im)
 im_blue_array = np.array(im_blue)
 im_red_array = np.array(im_red)
+im_green_array = np.array(im_green)
 
-im_array_rg = np.array(im_rgb)
 
-print(im_array.shape)
-print("array 1: ", im_array_rg)
-print("array 2: ",im2_array)
+
+
 
 # MIN_MATCH_COUNT = 1
 
@@ -64,7 +63,7 @@ print("array 2: ",im2_array)
 
 # matches = flann.knnMatch(des1, des2, k=2)
 
-#good = []
+# good = []
 
 # for m,n in matches:
 #     if m.distance < 0.7*n.distance:
@@ -74,7 +73,7 @@ print("array 2: ",im2_array)
 #     src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1,1,2)
 #     dst_pts = np.float32([kp1[m.trainIdx].pt for m in good]).reshape(-1,1,2)
 
-#     M, mask = cv2.findHomography(src_pts, cv2.RANSAC, 5.0)
+#     M, mask = cv2.findHomography(src_pts, cv2.RANSAC, 5)
 #     matchesMask = mask.ravel().tolist()
 
 #     h,w = im_array.shape
@@ -83,9 +82,9 @@ print("array 2: ",im2_array)
 
 #     im_blue_array = cv2.polylines(im_blue_array,[np.int32(dst)],True,255,3,cv2.LINE_AA)
 
-#else:
- #   print("Not enough matches found - {}/{}".format(len(good),MIN_MATCH_COUNT))
-#matchesMask = None
+# else:
+#    print("Not enough matches found - {}/{}".format(len(good),MIN_MATCH_COUNT))
+# matchesMask = None
 
 # draw_params = dict(matchColor = (0,255,0),
 #     singlePointColor = None,
@@ -140,52 +139,70 @@ print("array 2: ",im2_array)
 
 # orb = cv2.ORB_create()
 
-# kp, des = orb.detectAndCompute(im2_array,None)
-# kp_blue, des_blue = orb.detectAndCompute(im_blue_array,None)
+# im_bgr = cv2.cvtColor(im2_array,cv2.COLOR_RGB2BGR)
+# im_blue_bgr = cv2.cvtColor(im_blue_array, cv2.COLOR_RGB2BGR)
 
-# bf = cv2.BFMatcher(cv2.NORM_HAMMING2, crossCheck= True)
+
+# kp, des = orb.detectAndCompute(im_bgr,None)
+# kp_blue, des_blue = orb.detectAndCompute(im_blue_bgr,None)
+
+# bf = cv2.BFMatcher(cv2.NORM_HAMMING2, crossCheck= False)
 
 # matches_blue = bf.match(des,des_blue)
 
+# print(matches_blue)
+
 # matches_blue = sorted(matches_blue, key = lambda x:x.distance)
 
-# img3 = cv2.drawMatches(im2_array,kp,im_blue_array,kp_blue,matches_blue[:1000],None,flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+# print(matches_blue)
+
+# img3 = cv2.drawMatches(im2_array,kp,im_blue_array,kp_blue,matches_blue[:10],None,flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
 
 # plt.imshow(img3),plt.show()
 
 
 
-img_blue=(im_blue_array.astype(float))/255.0
-im_blue_hsv = colors.rgb_to_hsv(img_blue[...,:3])
-img_hsv_blue=im_blue_hsv[...,0].flatten()
+# img_blue=(im_blue_array.astype(float))/255.0
+# im_blue_hsv = colors.rgb_to_hsv(img_blue[...,:3])
+# img_hsv_blue=im_blue_hsv[...,0].flatten()
                 
-plt.hist(img_hsv_blue*360,256,range=(0.0,256), label="Hue")
-plt.show()
+# plt.hist(img_hsv_blue*360,256,range=(0.0,256), label="Hue")
+# plt.show()
 
-img_red=(im_red.astype(float))/255.0
-im_red_hsv = colors.rgb_to_hsv(img_red[...,:3])
-img_hsv_red=im_red_hsv[...,0].flatten()
+# img_red=(im_red.astype(float))/255.0
+# im_red_hsv = colors.rgb_to_hsv(img_red[...,:3])
+# img_hsv_red=im_red_hsv[...,0].flatten()
                 
-plt.hist(img_hsv_red*360,256,range=(0.0,256), label="Hue")
-plt.show()
+# plt.hist(img_hsv_red*360,256,range=(0.0,256), label="Hue")
+# plt.show()
 
 
-def create_prob_distr(img, histogram, min_saturation, min_value, min_prob):    
-    (h_values,bin_edges,n) = histogram
-    h_values = min_max_scaling(h_values)
-    img = (img.astype(float))/255.0
-    img_hsv = colors.rgb_to_hsv(img[...,:3])
-    prob_distr = np.zeros((img_hsv.shape[0], img_hsv.shape[1]))    
-    for i in range(img_hsv.shape[0]):
-        for j in range(img_hsv.shape[1]):
-            bin_index = np.digitize(img_hsv[i][j][0]*360,bin_edges, right=True)            
-            if(img_hsv[i][j][1] < min_saturation or img_hsv[i][j][2] < min_value or h_values[bin_index-1] < min_prob):                
-                prob_distr[i][j] = 0.0            
-            else:                
-                prob_distr[i][j] = h_values[bin_index-1]
-        return prob_distr
+# def create_prob_distr(img, histogram, min_saturation, min_value, min_prob):    
+#     (h_values,bin_edges,n) = histogram
+#     h_values = min_max_scaling(h_values)
+#     img = (img.astype(float))/255.0
+#     img_hsv = colors.rgb_to_hsv(img[...,:3])
+#     prob_distr = np.zeros((img_hsv.shape[0], img_hsv.shape[1]))    
+#     for i in range(img_hsv.shape[0]):
+#         for j in range(img_hsv.shape[1]):
+#             bin_index = np.digitize(img_hsv[i][j][0]*360,bin_edges, right=True)            
+#             if(img_hsv[i][j][1] < min_saturation or img_hsv[i][j][2] < min_value or h_values[bin_index-1] < min_prob):                
+#                 prob_distr[i][j] = 0.0            
+#             else:                
+#                 prob_distr[i][j] = h_values[bin_index-1]
+#         return prob_distr
 
+#im = np.array(cv2.cvtColor(im_array,cv2.COLOR_BGR2HSV))
+im = (im_array.astype(float))/255.0
+im = colors.rgb_to_hsv(im_array[...,:3])
 
+im_green = (im_green_array.astype(float))/255.0
+im_green = colors.rgb_to_hsv(im_green_array[...,:3])
+
+print("im HSV", im)
+
+lower_green_hsv = np.array([110,30,20], dtype="uint8")
+upper_green_hsv = np.array([150,70,50], dtype="uint8")
 
 
 lower_red = np.array([150,0,0], dtype="uint8")
@@ -200,15 +217,19 @@ upper_yellow = np.array([255,255,75], dtype="uint8")
 
 mask_red = cv2.inRange(im_array,lower_red,upper_red)
 mask_blue = cv2.inRange(im_array,lower_blue, upper_blue)
-mask_green = cv2.inRange(im_array,lower_green, upper_green)
+mask_green = cv2.inRange(im,lower_green_hsv, upper_green_hsv)
 mask_yellow = cv2.inRange(im_array,lower_yellow, upper_yellow)
 
+# print("Mask Green shape:", mask_green.shape)
+# print("mask REd:", mask_red)
 
 masked_red = cv2.bitwise_and(im_array,im_array,mask=mask_red)
 masked_blue = cv2.bitwise_and(im_array,im_array,mask=mask_blue)
-masked_green = cv2.bitwise_and(im_array,im_array,mask=mask_green)
+masked_green = cv2.bitwise_and(im,im,mask=mask_green)
 masked_yellow = cv2.bitwise_and(im_array,im_array,mask=mask_yellow)
 
+# print("Masked Green:",masked_green)
+# print("masked Red:", masked_red)
 
 masked_red_median = cv2.medianBlur(masked_red,3)
 masked_red_median_opening = cv2.morphologyEx(masked_red_median, cv2.MORPH_OPEN, np.ones((7,7),np.uint8))
@@ -285,8 +306,8 @@ res_image_circle = res_image_circle_red + res_image_circle_blue + res_image_circ
 
 #median = cv2.medianBlur(res_image, 5)
 
-#cv2.imshow("circle", res_image_circle)
-#cv2.waitKey(0)
+cv2.imshow("circle", res_image_circle)
+cv2.waitKey(0)
 #cv2.imshow("green_dot",res_image_circle_green)
 #cv2.waitKey(0)
 #cv2.imshow("masked",res_image)
