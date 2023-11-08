@@ -45,7 +45,7 @@ class TeensyCom:
             return length
 
     def __packLength(self, data):
-        length = str(len(data).zfill(self.__SIZE_LEN)).encode(self.__FORMAT)
+        length = str(len(data)).zfill(self.__SIZE_LEN).encode(self.__FORMAT)
         length = length + b'\n'
         return length
 
@@ -72,8 +72,8 @@ class TeensyCom:
         try:
             if not self.__serial.isOpen():
                 self.__serial.open()
-            length = self.__receiveLength().lstrip("0").decode(self.__FORMAT)
-            in_data = self.__serial.read(size=eval(length))
+            length = self.__receiveLength()
+            in_data = self.__serial.read(size=length)
             in_data = self.__PARSER.parse_xml(in_data)
         except Exception as e:
             return f"Exception {e} occurred"

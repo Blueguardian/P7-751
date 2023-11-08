@@ -110,7 +110,8 @@ class XMLhandler():
     def __np_3Dmatrix(cls, data, __type):
         """
         Classmethod for converting 3D matrix data into a numpy array (not tested or optimized)
-        :param _type: Type of data
+        :param __type: Type of data
+        :param data: data to be processed
         :return: Data in numpy array format
         """
         matrix = np.zeros(data.shape, dtype=eval(__type))
@@ -124,7 +125,7 @@ class XMLhandler():
     def __np_2Dmatrix(cls, data, __type):
         """
         Classmethod for converting 2D matrix data into a numpy array (not tested or optimized)
-        :param _type: Type of data
+        :param __type: Type of data
         :return: Data in numpy array format
         """
         matrix = np.zeros(data.shape, dtype=eval(__type))
@@ -137,7 +138,7 @@ class XMLhandler():
     def __np_transform(cls, data, __type):
         """
         Classmethod for converting transformation matrix data into a numpy array (not tested or optimized)
-        :param _type: Type of data
+        :param __type: Type of data
         :return: Data in numpy array format
         """
         transform = np.zeros((4, 4), dtype=eval(__type))
@@ -150,7 +151,7 @@ class XMLhandler():
     def __np_vector(cls, data, __type):
         """
         Classmethod for converting vector into a numpy array (not tested or optimized)
-        :param _type: Type of data
+        :param __type: Type of data
         :return: Data in numpy array format
         """
         vector = np.array(data, dtype=eval(__type))
@@ -160,7 +161,7 @@ class XMLhandler():
     def __np_value(cls, value, __type):
         """
         Classmethod for converting single value data into a numpy array (not tested or optimized)
-        :param _type: Type of data
+        :param __type: Type of data
         :return: Data in numpy array format
         """
         value = np.array(value, dtype=eval(__type))
@@ -206,16 +207,16 @@ class XMLhandler():
         xml_data = None
         if isinstance(__type, tuple):
             __type = __type[1]
-        data_dim = np.array(data, dtype=eval(__type))
-        if data_dim.ndim == 3:
+        data_dim = np.array(data, dtype=eval(__type)).ndim
+        if data_dim == 3:
             xml_data = self.__procxml_3Dmatrix(self.__np_3Dmatrix(data, __type), __type)
-        elif data_dim.ndim == 2 and data.shape[0] == 4 and data.shape[1] == 4:
+        elif data_dim == 2 and data.shape[0] == 4 and data.shape[1] == 4:
             xml_data = self.__procxml_transform(self.__np_transform(data, __type), __type)
-        elif data_dim.ndim == 2 and data.shape[0] != 4 and data.shape[1] != 4:
+        elif data_dim == 2 and data.shape[0] != 4 and data.shape[1] != 4:
             xml_data = self.__procxml_2Dmatrix(self.__np_2Dmatrix(data, __type), __type)
-        elif data_dim.ndim == 1:
+        elif data_dim == 1:
             xml_data = self.__procxml_vector(self.__np_vector(data, __type), __type)
-        elif data_dim.ndim == 0:
+        elif data_dim == 0:
             xml_data = self.__procxml_value(self.__np_value(data, __type), __type)
         else:
             raise Exception("Unknown dimensions")
@@ -282,7 +283,6 @@ class XMLhandler():
         """
         Classmethod for parsing a xml bytestring of a transformation matrix into a numpy array
         :param tree: The element tree object containing the data in xml format
-        :param data: The data to be parsed
         :return: a numpy array corresponding to the data
         """
         ROOT = tree.getroot()
@@ -303,7 +303,6 @@ class XMLhandler():
         """
         Classmethod for parsing a xml bytestring of a vector into a numpy array
         :param tree: The element tree object containing the data in xml format
-        :param data: The data to be parsed
         :return: a numpy array corresponding to the data
         """
         ROOT = tree.getroot()
@@ -320,7 +319,6 @@ class XMLhandler():
         """
         Classmethod for parsing a xml bytestring of a single value into a numpy array
         :param tree: The element tree object containing the data in xml format
-        :param data: The data to be parsed
         :return: a numpy array corresponding to the data
         """
         ROOT = tree.getroot()
