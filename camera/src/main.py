@@ -33,7 +33,7 @@ image_center = [int(2464/2),int(3280/2)]
 #im2 = Image.open("/home/g751/Desktop/Project/P7-751/camera/src/Image/newimage.jpg")
 #im_blue = cv2.imread("/home/g751/Desktop/Project/P7-751/camera/src/Image/blueimage.jpg")
 
-im = Image.open("/home/christian/Drone_project/P7-751/camera/src/Image/image.jpg")
+im = Image.open("/home/christian/Drone_project/P7-751/camera/src/Image/newimage.jpg")
 im_blue = Image.open("/home/christian/Drone_project/P7-751/camera/src/Image/blueimage.jpg")
 im_red = Image.open("/home/christian/Drone_project/P7-751/camera/src/Image/RED.png")
 im_green = Image.open("/home/christian/Drone_project/P7-751/camera/src/Image/GREEN.png")
@@ -192,40 +192,68 @@ im_green_array = np.array(im_green)
 #                 prob_distr[i][j] = h_values[bin_index-1]
 #         return prob_distr
 
-#im = np.array(cv2.cvtColor(im_array,cv2.COLOR_BGR2HSV))
-im = (im_array.astype(float))/255.0
-im = colors.rgb_to_hsv(im_array[...,:3])
-
-im_green = (im_green_array.astype(float))/255.0
-im_green = colors.rgb_to_hsv(im_green_array[...,:3])
-
-print("im HSV", im)
-
-lower_green_hsv = np.array([110,30,20], dtype="uint8")
-upper_green_hsv = np.array([150,70,50], dtype="uint8")
+#im_green = np.array(cv2.cvtColor(im_green_array,cv2.COLOR_BGR2HSV))
 
 
-lower_red = np.array([150,0,0], dtype="uint8")
-upper_red = np.array([255,75,75], dtype="uint8")
-lower_blue = np.array([0,0,100], dtype="uint8")
-upper_blue = np.array([100,100,255], dtype="uint8")
-lower_green = np.array([0,75,0], dtype="uint8")
-upper_green = np.array([75,255,75], dtype="uint8")
-lower_yellow = np.array([150,150,0], dtype="uint8")
-upper_yellow = np.array([255,255,75], dtype="uint8")
+# im = (im_array.astype(float))/255.0
+# im = colors.rgb_to_hsv(im_array[...,:3])
+
+# im_green = (im_green_array.astype(float))/255.0
+# im_green = colors.rgb_to_hsv(im_green_array[...,:3])
+
+# print("im green HSV", im)
+
+# lower_green_hsv = np.array([110/255,30/255,20/255])
+# upper_green_hsv = np.array([150/255,70/255,50/255])
+
+# print("Lower HSV green: ", lower_green_hsv)
+# print("upper green hsv:",upper_green_hsv)
+
+im_array_hsv = cv2.cvtColor(im_array, cv2.COLOR_RGB2HSV)
 
 
-mask_red = cv2.inRange(im_array,lower_red,upper_red)
-mask_blue = cv2.inRange(im_array,lower_blue, upper_blue)
-mask_green = cv2.inRange(im,lower_green_hsv, upper_green_hsv)
-mask_yellow = cv2.inRange(im_array,lower_yellow, upper_yellow)
 
+# in HSV
+lower_red = np.array([0,100,100])
+upper_red = np.array([10,255,255])
+lower_red_end = np.array([170,100,100])
+upper_red_end = np.array([179,255,255])
+
+lower_blue = np.array([110,100,100])
+upper_blue = np.array([130,255,255])
+
+lower_green = np.array([40,50,50])
+upper_green = np.array([80,255,255])
+
+lower_yellow = np.array([20,100,100])
+upper_yellow = np.array([35,255,255])
+
+# in RGB
+# lower_red = np.array([150,0,0], dtype="uint8")
+# upper_red = np.array([255,75,75], dtype="uint8")
+# lower_blue = np.array([0,0,100], dtype="uint8")
+# upper_blue = np.array([100,100,255], dtype="uint8")
+# lower_green = np.array([0,75,0], dtype="uint8")
+# upper_green = np.array([75,255,75], dtype="uint8")
+# lower_yellow = np.array([150,150,0], dtype="uint8")
+# upper_yellow = np.array([255,255,75], dtype="uint8")
+
+
+mask_red_end = cv2.inRange(im_array_hsv,lower_red_end,upper_red_end)
+mask_red = cv2.inRange(im_array_hsv,lower_red,upper_red)
+mask_blue = cv2.inRange(im_array_hsv,lower_blue, upper_blue)
+mask_green = cv2.inRange(im_array_hsv,lower_green, upper_green)
+mask_yellow = cv2.inRange(im_array_hsv,lower_yellow, upper_yellow)
+
+mask_red = cv2.bitwise_or(mask_red,mask_red_end)
+
+print(mask_red)
 # print("Mask Green shape:", mask_green.shape)
 # print("mask REd:", mask_red)
 
 masked_red = cv2.bitwise_and(im_array,im_array,mask=mask_red)
 masked_blue = cv2.bitwise_and(im_array,im_array,mask=mask_blue)
-masked_green = cv2.bitwise_and(im,im,mask=mask_green)
+masked_green = cv2.bitwise_and(im_array,im_array,mask=mask_green)
 masked_yellow = cv2.bitwise_and(im_array,im_array,mask=mask_yellow)
 
 # print("Masked Green:",masked_green)
@@ -246,15 +274,18 @@ mask_blue_filtered = np.transpose(np.nonzero(masked_blue_median_opening[:,:,0] >
 mask_green_filtered = np.transpose(np.nonzero(masked_green_median_opening[:,:,0] > 0)) 
 mask_yellow_filtered = np.transpose(np.nonzero(masked_yellow_median_opening[:,:,0] > 0)) 
 
+# print("mask green filtered:", mask_green_filtered)
 
-print("Max x:" + str(np.max(mask_red_filtered[:, 0])))
-print("Min x:" + str(np.min(mask_red_filtered[:, 0])))
-print("Max y:" + str(np.max(mask_red_filtered[:, 1])))
-print("Min y:" + str(np.min(mask_red_filtered[:, 1])))
-print("Max x:" + str(np.max(mask_blue_filtered[:, 0])))
-print("Min x:" + str(np.min(mask_blue_filtered[:, 0])))
-print("Max y:" + str(np.max(mask_blue_filtered[:, 1])))
-print("Min y:" + str(np.min(mask_blue_filtered[:, 1])))
+# print("Max x:" + str(np.max(mask_red_filtered[:, 0])))
+# print("Min x:" + str(np.min(mask_red_filtered[:, 0])))
+# print("Max y:" + str(np.max(mask_red_filtered[:, 1])))
+# print("Min y:" + str(np.min(mask_red_filtered[:, 1])))
+# print("Max x:" + str(np.max(mask_blue_filtered[:, 0])))
+# print("Min x:" + str(np.min(mask_blue_filtered[:, 0])))
+# print("Max y:" + str(np.max(mask_blue_filtered[:, 1])))
+# print("Min y:" + str(np.min(mask_blue_filtered[:, 1])))
+# print("Max x:" + str(np.max(mask_green_filtered[:, 0])))
+# print("Min x:" + str(np.min(mask_green_filtered[:, 0])))
 
 red_x_max = np.max(mask_red_filtered[:, 0])
 red_x_min =np.min(mask_red_filtered[:, 0])
@@ -279,20 +310,20 @@ blue_center = [int((blue_x_max - blue_x_min)/2 + blue_x_min), int((blue_y_max - 
 green_center = [int((green_x_max - green_x_min)/2 + green_x_min), int((green_y_max - green_y_min)/2 + green_y_min)] 
 yellow_center = [int((yellow_x_max - yellow_x_min)/2 + yellow_x_min), int((yellow_y_max - yellow_y_min)/2 + yellow_y_min)]
 
-print(red_center)
-print(blue_center)
-print(green_center)
-print(yellow_center)
-print(masked_red.shape)
-print(green_x_max,green_x_min)
+# print(red_center)
+# print(blue_center)
+# print(green_center)
+# print(yellow_center)
+# print(masked_red.shape)
+# print(green_x_max,green_x_min)
 
 
 res_image = masked_red + masked_blue + masked_yellow + masked_green
 
-res_image_circle_red = cv2.circle(masked_red_median_opening,(red_center[1],red_center[0]),30,(255,255,255),-60)
-res_image_circle_blue = cv2.circle(masked_blue_median_opening,(blue_center[1],blue_center[0]),30,(255,255,255),-60)
-res_image_circle_green = cv2.circle(masked_green_median_opening,(green_center[1],green_center[0]),30,(255,255,255),-60)
-res_image_circle_yellow = cv2.circle(masked_yellow_median_opening,(yellow_center[1],yellow_center[0]),30,(255,255,255),-60)
+res_image_circle_red = cv2.circle(masked_red_median_opening,(red_center[1],red_center[0]),10,(255,255,255),-30)
+res_image_circle_blue = cv2.circle(masked_blue_median_opening,(blue_center[1],blue_center[0]),10,(255,255,255),-30)
+res_image_circle_green = cv2.circle(masked_green_median_opening,(green_center[1],green_center[0]),10,(255,255,255),-30)
+res_image_circle_yellow = cv2.circle(masked_yellow_median_opening,(yellow_center[1],yellow_center[0]),10,(255,255,255),-30)
 
 center_point = [int((red_center[1] + blue_center[1] + green_center[1] + yellow_center[1])/4), int((red_center[0] + blue_center[0] + green_center[0] + yellow_center[0])/4)]
 
@@ -302,6 +333,7 @@ res_image_center = cv2.circle(masked_yellow_median_opening,(image_center[1],imag
 
 res_image_circle = res_image_circle_red + res_image_circle_blue + res_image_circle_green + res_image_circle_yellow + res_image_circle_center + res_image_center
 
+res_image_circle = cv2.resize(res_image_circle, [960,540])
 
 
 #median = cv2.medianBlur(res_image, 5)
