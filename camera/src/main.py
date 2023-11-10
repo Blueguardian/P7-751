@@ -210,6 +210,34 @@ im_green_array = np.array(im_green)
 # print("upper green hsv:",upper_green_hsv)
 
 
+# Create Blob detector parameters
+
+# params = cv2.SimpleBlobDetector_Params()
+
+
+# params.filterByArea = True
+# params.minArea = 100
+
+# Set circularity parameter to true and set min to close to perfect circle
+
+# params.filterByCircularity = False
+# params.minCircularity = 0.6
+# params.maxCircularity = 1
+
+# Set convexity
+# params.filterByConvexity = True
+# params.minConvexity = 0.87
+
+# params.filterByInertia = False
+
+# Creates the detector with the given parameters
+# ver = (cv2.__version__).split('.')
+# if int(ver[0]) < 3 :
+#     detector = cv2.SimpleBlobDetector(params)
+# else : 
+#     detector = cv2.SimpleBlobDetector_create(params)
+
+
 # Turn image into HSV colorspace
 im_array_hsv = cv2.cvtColor(im_array, cv2.COLOR_RGB2HSV)
 
@@ -250,7 +278,7 @@ mask_yellow = cv2.inRange(im_array_hsv,lower_yellow, upper_yellow)
 # Add the two masks for red as their are in opposite ends of the HSV spectrum
 mask_red = cv2.bitwise_or(mask_red,mask_red_end)
 
-print(mask_red)
+
 # print("Mask Green shape:", mask_green.shape)
 # print("mask REd:", mask_red)
 
@@ -324,8 +352,51 @@ yellow_center = [int((yellow_x_max - yellow_x_min)/2 + yellow_x_min), int((yello
 # print(masked_red.shape)
 # print(green_x_max,green_x_min)
 
+# Add all the mased images together
+res_image = masked_red_median_opening + masked_blue_median_opening + masked_yellow_median_opening + masked_green_median_opening
 
-res_image = masked_red + masked_blue + masked_yellow + masked_green
+# Convert to grayscale
+# masked_red_gray = cv2.cvtColor(masked_red_median_opening,cv2.COLOR_RGB2GRAY)
+# masked_blue_gray = cv2.cvtColor(masked_blue_median_opening,cv2.COLOR_RGB2GRAY)
+# masked_green_gray = cv2.cvtColor(masked_green_median_opening,cv2.COLOR_RGB2GRAY)
+# masked_yellow_gray = cv2.cvtColor(masked_yellow_median_opening,cv2.COLOR_RGB2GRAY)
+
+# masked_blue_gray = cv2.resize(masked_blue_gray,[960,540])
+# cv2.imshow("gray",masked_blue_gray)
+# cv2.waitKey(0)
+
+# Threshold
+# _, masked_red_gray = cv2.threshold(masked_red_gray, 127,255,cv2.THRESH_BINARY)
+# _, masked_blue_gray = cv2.threshold(masked_blue_gray, 50,255,cv2.THRESH_BINARY)
+
+#masked_blue_gray = cv2.bitwise_and(masked_blue_gray,masked_blue_gray)
+# _,masked_green_gray = cv2.threshold(masked_green_gray, 127,255,cv2.THRESH_BINARY)
+# _,masked_yellow_gray = cv2.threshold(masked_yellow_gray, 127,255,cv2.THRESH_BINARY)
+
+# masked_blue_gray = cv2.resize(masked_blue_gray,[960,540])
+# cv2.imshow("thresh", masked_blue_gray)
+# cv2.waitKey(0)
+
+
+
+# Perform blob detection
+# keypoints_red = detector.detect(masked_red_gray)
+# keypoints_blue = detector.detect(masked_blue_gray)
+# keypoints_green = detector.detect(masked_green_gray)
+# keypoints_yellow = detector.detect(masked_yellow_gray)
+
+
+
+# im_keypoints_red = cv2.drawKeypoints(masked_red_gray, keypoints_red, None, (255,255,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+# im_keypoints_blue = cv2.drawKeypoints(masked_blue_gray, keypoints_blue, None, (255,255,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+# im_keypoints_green = cv2.drawKeypoints(masked_green_gray, keypoints_green, None, (255,255,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+# im_keypoints_yellow = cv2.drawKeypoints(masked_yellow_gray, keypoints_yellow, None, (255,255,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+
+#im_keypoints = cv2.cvtColor(im_keypoints, cv2.COLOR_RGB2HSV)
+
+# im_keypoints = cv2.resize(im_keypoints_red,[960,540])
+# cv2.imshow("blobs",im_keypoints)
+# cv2.waitKey(0)
 
 # Draw circles at the center of each color marker for visualizaion
 res_image_circle_red = cv2.circle(masked_red_median_opening,(red_center[1],red_center[0]),10,(255,255,255),-30)
@@ -359,8 +430,8 @@ cv2.waitKey(0)
 #cv2.waitKey(0)
 #cv2.imshow("MedianBlured",median)
 #cv2.waitKey(0)
-#cv2.imshow("red",masked_red)
-#cv2.waitKey(0)
+# cv2.imshow("red",masked_red)
+# cv2.waitKey(0)
 #cv2.imshow("blue",masked_blue)
 #cv2.waitKey(0)
 #cv2.imshow("green",masked_green)
