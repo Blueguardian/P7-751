@@ -1,6 +1,6 @@
 import cv2, time
-#from picamera2 import Picamera2, Preview
-#from libcamera import ColorSpace
+from picamera2 import Picamera2, Preview
+from libcamera import ColorSpace
 from PIL import Image
 import numpy as np
 from matplotlib import pyplot as plt
@@ -30,15 +30,16 @@ upper_green = np.array([80,255,255])
 lower_yellow = np.array([20,100,100])
 upper_yellow = np.array([35,255,255])
 
+picam2 = Picamera2()
+cv2.startWindowThread()
+camera_config = picam2.create_still_configuration(main={"format": 'BGR888', "size": (3280, 2464)})
+picam2.configure(camera_config)
+#picam2.start_preview(Preview.NULL)
+picam2.start()
 
 def take_pic():
-    picam2 = Picamera2()
-    cv2.startWindowThread()
-    camera_config = picam2.create_still_configuration(main={"format": 'BGR888', "size": (3280, 2464)})
-    picam2.configure(camera_config)
-    #picam2.start_preview(Preview.NULL)
-    picam2.start()
-
+    global query_pic
+    print("Taking picture...")
 
     time.sleep(1)
     image = picam2.capture_image("main")
@@ -48,12 +49,15 @@ def take_pic():
     if query_pic == 0:
         picam2.switch_mode_and_capture_file(camera_config,"camera/src/Image/Referenceimage.jpg")
         query_pic += 1
-    else:
+        print("Took reference picture...")
+    if query_pic == 1:
         picam2.switch_mode_and_capture_file(camera_config,"camera/src/Image/Queryimage.jpg")
-
+        print("Took query picture...")
+    print("Done taking picture!")
 
 def imageProc(image):
 
+    print("starting image magic...")
     # Convert to HSV
     image_hsv = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
 
@@ -84,6 +88,8 @@ def imageProc(image):
     masked_yellow_median = cv2.medianBlur(masked_yellow,3)
     masked_yellow_median_opening = cv2.morphologyEx(masked_yellow_median, cv2.MORPH_OPEN, np.ones((7,7),np.uint8))
 
+    print("Abracadabra it its now filtered...")
+
     # transpose the array and remove zero elements
     mask_red_filtered = np.transpose(np.nonzero(masked_red_median_opening[:,:,0] > 0)) 
     mask_blue_filtered = np.transpose(np.nonzero(masked_blue_median_opening[:,:,0] > 0)) 
@@ -108,6 +114,7 @@ def imageProc(image):
     yellow_y_max =np.max(mask_yellow_filtered[:, 1])
     yellow_y_min =np.min(mask_yellow_filtered[:, 1])
 
+    print("Calculated middle points...")
     # Calculate the center of each color marker
     red_center = [int((red_x_max - red_x_min)/2 + red_x_min), int((red_y_max - red_y_min)/2 + red_y_min)]
     blue_center = [int((blue_x_max - blue_x_min)/2 + blue_x_min), int((blue_y_max - blue_y_min)/2 + blue_y_min)]
@@ -117,30 +124,37 @@ def imageProc(image):
     # Calculate the center of the 4 colored markers
     center_point = [int((red_center[1] + blue_center[1] + green_center[1] + yellow_center[1])/4), int((red_center[0] + blue_center[0] + green_center[0] + yellow_center[0])/4)]
 
+    print("Calculated center point and finished magic!")
+    
     return center_point
 
 
 def calculateDifference(center_point_reference,center_point_query):
-
+    print("Calculating difference in center point...")
     calc_diff_x = center_point_reference[1] - center_point_query[1]
     calc_diff_y = center_point_reference[0] - center_point_query[0]
 
+    euc_dist = np.sqrt(((image_center[1]- center_point_query[1])*(image_center[1]- center_point_query[1]))+((image_center[0]-center_point_query[0])*(image_center[0]-center_point_query[0])))
     calculated_difference = [calc_diff_x,calc_diff_y]
-
+    print("Done calculating difference! It is:", calculated_difference)
+    print("Euclidean Distance:",euc_dist)
     return calculated_difference
 
 while True:
-    im_reference = np.array(Image.open(str(abs_file_path)+"/Referenceimage.jpg"))
-    im_query = np.array(Image.open(str(abs_file_path)+"/Queryimage"))
 
     take_pic()
+
+    im_reference = np.array(Image.open(str(abs_file_path)+"/Referenceimage.jpg"))
+    im_query = np.array(Image.open(str(abs_file_path)+"/Queryimage.jpg"))
 
     if query_img == 0:
         center_point_reference = imageProc(im_reference)
         query_img += 1
-    else:
+    if query_img == 1:
         center_point_query = imageProc(im_query)
     
+    # cv2.imshow("query", im_query)
+    # cv2.waitKey(0)
     calculateDifference(center_point_reference,center_point_query)
     
 
