@@ -83,7 +83,6 @@ class tcp_client_test:
                 return "Invalid data"
             else:
                 data = data.decode(self.__FORMAT)
-                data = data.split("\f")[0]
                 return data
 
 

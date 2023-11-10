@@ -97,7 +97,6 @@ class TCPServer:
                 return "Invalid data"
             else:
                 data = data.decode(self.__FORMAT)
-                data = data.split("\f")[0]
                 return data
 
     def receiveData(self):

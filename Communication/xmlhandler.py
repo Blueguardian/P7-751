@@ -26,14 +26,14 @@ class XMLhandler():
     __COUNTER = lxml.objectify
 
     @classmethod
-    def __procxml_3Dmatrix(cls, data, _type):
+    def __procxml_3Dmatrix(cls, data, _type, origin):
         """
         Classmethod for processing 3Dmatrix data into an XML format (Not optimized)
         :param data: Data to be processed
         :param _type: Type of data
         :return: Data in XML-bytestring format
         """
-        ROOT = cls.__BUILDER.Element("Matrix3D", type=f"{_type}")
+        ROOT = cls.__BUILDER.Element("Matrix3D", type=f"{_type}", origin=f"{origin}")
         ROWS = []
         INDEX = []
         for i in range(0, data.shape[0]):
@@ -45,14 +45,14 @@ class XMLhandler():
         return ROOT
 
     @classmethod
-    def __procxml_2Dmatrix(cls, data, _type):
+    def __procxml_2Dmatrix(cls, data, _type, origin):
         """
         Classmethod for processing 2Dmatrix data into an XML format (Not optimized)
         :param data: Data to be processed
         :param _type: Type of data
         :return: Data in XML-bytestring format
         """
-        ROOT = cls.__BUILDER.Element("Matrix", type=f"{_type}")
+        ROOT = cls.__BUILDER.Element("Matrix", type=f"{_type}", origin=f"{origin}")
         ROWS = []
         for i in range(0, data.shape[0]):
             ROWS.append(cls.__BUILDER.SubElement(ROOT, "ROW", num=f"{i}"))
@@ -61,14 +61,14 @@ class XMLhandler():
         return ROOT
 
     @classmethod
-    def __procxml_transform(cls, data, _type):
+    def __procxml_transform(cls, data, _type, origin):
         """
         Classmethod for processing transformation matrix data into an XML format (Not optimized)
         :param data: Data to be processed
         :param _type: Type of data
         :return: Data in XML-bytestring format
         """
-        ROOT = cls.__BUILDER.Element("Transform", type=f"{_type}")
+        ROOT = cls.__BUILDER.Element("Transform", type=f"{_type}", origin=f"{origin}")
         ROOT.text = _type
         ROW1 = cls.__BUILDER.SubElement(ROOT, "Row", num="1")
         ROW2 = cls.__BUILDER.SubElement(ROOT, "Row", num="2")
@@ -80,28 +80,28 @@ class XMLhandler():
         return ROOT
 
     @classmethod
-    def __procxml_vector(cls, data, _type):
+    def __procxml_vector(cls, data, _type, origin):
         """
         Classmethod for processing vectors data into an XML format (Not optimized)
         :param data: Data to be processed
         :param _type: Type of data
         :return: Data in XML-bytestring format
         """
-        ROOT = cls.__BUILDER.Element("Vector", type=f"{_type}")
+        ROOT = cls.__BUILDER.Element("Vector", type=f"{_type}", origin=f"{origin}")
         ROOT.text = _type
         for i in range(0, len(data)):
             cls.__BUILDER.SubElement(ROOT, "INDEX", num=f"{i + 1}").text = str(data[i])
         return ROOT
 
     @classmethod
-    def __procxml_value(cls, data, _type):
+    def __procxml_value(cls, data, _type, origin):
         """
         Classmethod for processing single value data into an XML format (Not optimized)
         :param data: Data to be processed
         :param _type: Type of data
         :return: Data in XML-bytestring format
         """
-        ROOT = cls.__BUILDER.Element("Value", type=f"{_type}")
+        ROOT = cls.__BUILDER.Element("Value", type=f"{_type}", origin=f"{origin}")
         ROOT.text = _type
         cls.__BUILDER.SubElement(ROOT, "VALUE").text = str(data)
         return ROOT
@@ -197,7 +197,7 @@ class XMLhandler():
         else:
             raise Exception("Non-compatible data type for object")
 
-    def process_xml(self, data):
+    def process_xml(self, data, origin="None"):
         """
         Instance method for processing data into xml format, utilises classmethods for processing
         :param data: Data to be processed
@@ -209,15 +209,15 @@ class XMLhandler():
             __type = __type[1]
         data_dim = np.array(data, dtype=eval(__type)).ndim
         if data_dim == 3:
-            xml_data = self.__procxml_3Dmatrix(self.__np_3Dmatrix(data, __type), __type)
+            xml_data = self.__procxml_3Dmatrix(self.__np_3Dmatrix(data, __type), __type, origin)
         elif data_dim == 2 and data.shape[0] == 4 and data.shape[1] == 4:
-            xml_data = self.__procxml_transform(self.__np_transform(data, __type), __type)
+            xml_data = self.__procxml_transform(self.__np_transform(data, __type), __type, origin)
         elif data_dim == 2 and data.shape[0] != 4 and data.shape[1] != 4:
-            xml_data = self.__procxml_2Dmatrix(self.__np_2Dmatrix(data, __type), __type)
+            xml_data = self.__procxml_2Dmatrix(self.__np_2Dmatrix(data, __type), __type, origin)
         elif data_dim == 1:
-            xml_data = self.__procxml_vector(self.__np_vector(data, __type), __type)
+            xml_data = self.__procxml_vector(self.__np_vector(data, __type), __type, origin)
         elif data_dim == 0:
-            xml_data = self.__procxml_value(self.__np_value(data, __type), __type)
+            xml_data = self.__procxml_value(self.__np_value(data, __type), __type, origin)
         else:
             raise Exception("Unknown dimensions")
         return lxml.etree.tostring(xml_data)
@@ -239,6 +239,7 @@ class XMLhandler():
         y = root.ROW.countchildren()
         z = root.ROW.INDEX.countchildren()
         matrix3d = np.zeros((x, y, z), dtype=__type)
+        origin = ROOT.get("origin")
 
         i = j = k = 0
         for row in ROOT:
@@ -250,7 +251,7 @@ class XMLhandler():
                 k = 0
             i += 1
             j = 0
-        return matrix3d
+        return origin, matrix3d
 
     @classmethod
     def __parsexml_2Dmatrix(cls, tree, data):
@@ -268,6 +269,7 @@ class XMLhandler():
         x = root.countchildren()
         y = root.ROW.countchildren()
         matrix2d = np.zeros(shape=(x, y), dtype=__type)
+        origin = ROOT.get("origin")
 
         i = j = 0
         for row in ROOT:
@@ -276,7 +278,7 @@ class XMLhandler():
                 j += 1
             i += 1
             j = 0
-        return matrix2d
+        return origin, matrix2d
 
     @classmethod
     def __parsexml_transform(cls, tree):
@@ -288,6 +290,7 @@ class XMLhandler():
         ROOT = tree.getroot()
         __type = eval(ROOT.get('type'))
         transform = np.zeros((4, 4), dtype=__type)
+        origin = ROOT.get("origin")
 
         i = j = 0
         for row in ROOT:
@@ -296,7 +299,7 @@ class XMLhandler():
                 j += 1
             i += 1
             j = 0
-        return transform
+        return origin, transform
 
     @classmethod
     def __parsexml_vector(cls, tree):
@@ -308,11 +311,12 @@ class XMLhandler():
         ROOT = tree.getroot()
         __type = eval(ROOT.get('type'))
         vector = []
+        origin = ROOT.get("origin")
 
         for element in ROOT:
             vector.append(element.text)
         vector = np.array(vector, dtype=__type)
-        return vector
+        return origin, vector
 
     @classmethod
     def __parsexml_value(cls, tree):
@@ -324,11 +328,12 @@ class XMLhandler():
         ROOT = tree.getroot()
         __type = eval(ROOT.get('type'))
         value = None
+        origin = ROOT.get("origin")
 
         for element in ROOT:
             value = element.text
         value = np.array(value, dtype=__type)
-        return value
+        return origin, value
 
     def parse_xml(self, data):
         """
