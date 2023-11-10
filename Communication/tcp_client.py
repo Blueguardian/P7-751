@@ -105,7 +105,7 @@ class tcp_client_test:
                 origin, in_data = self.__PARSER.parse_xml(temp)
                 return origin, in_data
 
-    def sendData(self, data, origin):
+    def sendData(self, data, origin="None"):
         """
         Instance method, used for sending xml formatted data to the socket stream, utilises internal methods and embedded
         class for processing the data. Returns error if socket is closed or the connection timed out.
@@ -144,54 +144,54 @@ class tcp_client_test:
 """Receives 'ack' before continuing to ensure a fully established connection"""
 """Sends different types of data to the server for processing"""
 
-# # Instantiate client object
-# client = tcp_client_test()
-#
-# # Still not tested for other types than ndarray
-#
-# # "Main function" only used due to class definition above
-# if __name__ == "__main__":
-#     ack = None # Initialise ack variable
-#     while ack != 'ack':
-#         client.sendMsg('ack\f') # Reassign until ack == 'ack'
-#         ack = client.receiveMsg() # Send 'ack' to server
-#
-#     # Define different data type for testing the setup
-#     data_fun1 = np.zeros((5, 5))
-#     data_fun2 = np.zeros((5, 5, 2))
-#     data_fun3 = np.zeros((3, 1))
-#     data_fun4 = np.zeros((1))
-#     data_fun5 = np.zeros((4, 4))
-#     data_fun5[0, 0] = math.cos(5)
-#     data_fun5[0, 1] = -math.sin(5)
-#     data_fun5[0, 3] = 411.0
-#     data_fun5[1, ] = math.sin(5)*math.cos(50)
-#     data_fun5[1, 1] = math.cos(5)*math.cos(50)
-#     data_fun5[1, 2] = -math.sin(50)
-#     data_fun5[1, 3] = math.cos(50)*112.0
-#     data_fun5[2, 0] = math.sin(5)*math.sin(50)
-#     data_fun5[2, 1] = math.cos(5)*math.sin(50)
-#     data_fun5[2, 2] = math.cos(50)
-#     data_fun5[2, 3] = math.cos(50)*112.0
-#     data_fun5[3, 3] = 1.0
-#     i = 0 # Iterator
-#     sleep(2) # Wait 2 seconds before sending all the data
-#     while True:
-#         if i < 1:
-#             check = client.sendData(data_fun1) # Send 2D Matrix
-#             print(check)
-#         elif i == 1:
-#             check = client.sendData(data_fun2) # Send 3D Matrix
-#             print(check)
-#         elif i == 2:
-#             check = client.sendData(data_fun3) # Send Vector
-#             print(check)
-#         elif i == 3:
-#             check = client.sendData(data_fun4) # Send Value
-#             print(check)
-#         elif i > 3 and i < 5:
-#             check = client.sendData(data_fun5) # Send transformation matrix
-#             print(check)
-#         i += 1
+# Instantiate client object
+client = tcp_client_test(host='192.168.0.101')
+
+# Still not tested for other types than ndarray
+
+# "Main function" only used due to class definition above
+if __name__ == "__main__":
+    ack = None # Initialise ack variable
+    while ack != 'ack':
+        client.sendMsg('ack') # Reassign until ack == 'ack'
+        ack = client.receiveMsg() # Send 'ack' to server
+
+    # Define different data type for testing the setup
+    data_fun1 = np.zeros((5, 5))
+    data_fun2 = np.zeros((5, 5, 2))
+    data_fun3 = np.zeros((3, 1))
+    data_fun4 = np.zeros((1))
+    data_fun5 = np.zeros((4, 4))
+    data_fun5[0, 0] = math.cos(5)
+    data_fun5[0, 1] = -math.sin(5)
+    data_fun5[0, 3] = 411.0
+    data_fun5[1, ] = math.sin(5)*math.cos(50)
+    data_fun5[1, 1] = math.cos(5)*math.cos(50)
+    data_fun5[1, 2] = -math.sin(50)
+    data_fun5[1, 3] = math.cos(50)*112.0
+    data_fun5[2, 0] = math.sin(5)*math.sin(50)
+    data_fun5[2, 1] = math.cos(5)*math.sin(50)
+    data_fun5[2, 2] = math.cos(50)
+    data_fun5[2, 3] = math.cos(50)*112.0
+    data_fun5[3, 3] = 1.0
+    i = 0 # Iterator
+    sleep(2) # Wait 2 seconds before sending all the data
+    while True:
+        if i < 1:
+            check = client.sendData(data_fun1) # Send 2D Matrix
+            print(check)
+        elif i == 1:
+            check = client.sendData(data_fun2) # Send 3D Matrix
+            print(check)
+        elif i == 2:
+            check = client.sendData(data_fun3) # Send Vector
+            print(check)
+        elif i == 3:
+            check = client.sendData(data_fun4) # Send Value
+            print(check)
+        elif i > 3 and i < 5:
+            check = client.sendData(data_fun5) # Send transformation matrix
+            print(check)
+        i += 1
 
 
