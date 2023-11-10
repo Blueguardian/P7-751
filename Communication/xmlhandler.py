@@ -347,17 +347,18 @@ class XMLhandler():
         ROOT = tree.getroot()
         tag = ROOT.tag
         data_parsed = None
+        origin = None
 
         if tag == 'Value':
-            data_parsed = self.__parsexml_value(tree)
+            origin, data_parsed = self.__parsexml_value(tree)
         elif tag == 'Vector':
-            data_parsed = self.__parsexml_vector(tree)
+            origin, data_parsed = self.__parsexml_vector(tree)
         elif tag == 'Transform':
-            data_parsed = self.__parsexml_transform(tree)
+            origin, data_parsed = self.__parsexml_transform(tree)
         elif tag == 'Matrix':
-            data_parsed = self.__parsexml_2Dmatrix(tree, data)
+            origin, data_parsed = self.__parsexml_2Dmatrix(tree, data)
         elif tag == 'Matrix3D':
-            data_parsed = self.__parsexml_3Dmatrix(tree, data)
+            origin, data_parsed = self.__parsexml_3Dmatrix(tree, data)
         else:
             raise Exception("Unknown data")
-        return data_parsed
+        return origin, data_parsed

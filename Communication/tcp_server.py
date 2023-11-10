@@ -115,10 +115,10 @@ class TCPServer:
                 return "DATA_INVALID error"
             else:
                 temp = data.decode(self.__FORMAT)
-                in_data = self.__PARSER.parse_xml(temp)
-                return in_data
+                origin, in_data = self.__PARSER.parse_xml(temp)
+                return origin, in_data
 
-    def sendData(self, data):
+    def sendData(self, data, origin):
         """
         Instance method, used for sending xml formatted data to the socket stream, utilises internal methods and embedded
         class for processing the data. Returns error if socket is closed or the connection timed out.
@@ -127,7 +127,7 @@ class TCPServer:
         :return: Error if socket timed out and None if successful
         """
         try:
-            out_data = self.__PARSER.process_xml(data)
+            out_data = self.__PARSER.process_xml(data, origin)
             length = b'-'+bytes(f"{len(data)}".zfill(self.__LEN_SIZE)) + b'-'
             out_data = length + out_data
             if not isinstance(data, bytes):
@@ -167,8 +167,9 @@ class TCPServer:
 #         ack = server.receiveMsg() # Reassign until ack == 'ack'
 #         server.sendMsg('ack\f') # Send 'ack' to client
 #     while True:
-#         rcv_data = server.receiveData() # Receive data
+#         origin, rcv_data = server.receiveData() # Receive data
 #         if isinstance(rcv_data, str): # If it is a string (An error)
 #             continue
 #         else:
+#             print(origin)
 #             print(rcv_data) # Otherwise print the received data

@@ -102,11 +102,10 @@ class tcp_client_test:
                 return "DATA_INVALID error"
             else:
                 temp = data.decode(self.__FORMAT)
-                temp = temp.split('<SEPARATOR>')
-                in_data = self.__PARSER.parse_xml(temp[0])
-                return in_data
+                origin, in_data = self.__PARSER.parse_xml(temp)
+                return origin, in_data
 
-    def sendData(self, data):
+    def sendData(self, data, origin):
         """
         Instance method, used for sending xml formatted data to the socket stream, utilises internal methods and embedded
         class for processing the data. Returns error if socket is closed or the connection timed out.
@@ -115,7 +114,7 @@ class tcp_client_test:
         :return: Error if socket timed out and None if successful
         """
         try:
-            out_data = self.__PARSER.process_xml(data)
+            out_data = self.__PARSER.process_xml(data, origin)
             length = b'-' + f"{len(out_data)}".zfill(8).encode(self.__FORMAT) + b'-'
             out_data = length + out_data
             if not isinstance(out_data, bytes):
