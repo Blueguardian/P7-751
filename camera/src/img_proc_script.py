@@ -30,6 +30,13 @@ upper_green = np.array([80,255,255])
 lower_yellow = np.array([20,100,100])
 upper_yellow = np.array([35,255,255])
 
+#focal length
+f = 2171
+
+k_instrinsic = [[f]]
+
+# Picam setup
+
 picam2 = Picamera2()
 cv2.startWindowThread()
 camera_config = picam2.create_still_configuration(main={"format": 'BGR888', "size": (3280, 2464)})
