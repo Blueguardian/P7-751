@@ -53,6 +53,18 @@ picam2.configure(camera_config)
 #picam2.start_preview(Preview.NULL)
 picam2.start()
 
+# Hard coded global coordinates for markers in mm [x,y,z]
+
+red = [20,20,0]
+blue = [8.7,20,0]
+green = [20,7,0]
+yellow = [8.7,7,0]
+
+object_points = [[red],
+                 [blue],
+                 [green],
+                 [yellow]]
+
 def takePic():
     global query_pic
     print("Taking picture...")
@@ -167,10 +179,22 @@ def calculateDifference(center_point_reference,center_point_query):
 
 def calculateRotationTranslation(center_coords_ref,center_coords_query):
 
-    red_marker = [center_coords_query[1],center_coords_query[0],1]
-    blue_marker = [center_coords_query[3],center_coords_query[2],1]
-    object_points = [k_instrinsic_inverted*red_marker]
+    red_marker = [center_coords_query[1],center_coords_query[0]]
+    blue_marker = [center_coords_query[3],center_coords_query[2]]
+    green_marker = [center_coords_query[5],center_coords_query[4]]
+    yellow_marker = [center_coords_query[7],center_coords_query[6]]
+
+    image_points = [[red_marker]
+                    [blue_marker],
+                    [green_marker],
+                    [yellow_marker]]
+    
+    succes, rvec, tvec = cv2.solvePnP(object_points, image_points, k_instrinsic, dist_coef)
+
     print(object_points)
+    print("rotation vector:", rvec)
+    print("Translational vector:", tvec)
+    return rvec, tvec
 
 while True:
 
