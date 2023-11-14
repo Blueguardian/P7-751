@@ -38,11 +38,11 @@ v1 = 1200.56
 
 k_instrinsic = np.array([[f_x,0,u1],
                          [0,f_y,v1],
-                         [0,0,1.0]])
+                         [0,0,1.0]],dtype="double")
 
 k_instrinsic_inverted = np.linalg.inv(k_instrinsic)
 
-dist_coef = np.array([0.175, 0.133, -0.002, -0.008, -1.965])
+dist_coef = np.array([0.175, 0.133, -0.002, -0.008, -1.965],dtype="double")
 
 # Picam setup
 
@@ -63,8 +63,9 @@ yellow = [8.7,7,0]
 object_points = np.array([red,
                  blue,
                  green,
-                 yellow], dtype=)
-print(object_points)
+                 yellow], dtype="double")
+
+
 def takePic():
     global query_pic
     print("Taking picture...")
@@ -187,7 +188,7 @@ def calculateRotationTranslation(center_coords_ref,center_coords_query):
     image_points = np.array([red_marker,
                     blue_marker,
                     green_marker,
-                    yellow_marker])
+                    yellow_marker], dtype= "double")
     
     succes, rvec, tvec = cv2.solvePnP(object_points, image_points, k_instrinsic, dist_coef, flags = 0)
 
