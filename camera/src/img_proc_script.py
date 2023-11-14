@@ -31,9 +31,18 @@ lower_yellow = np.array([20,100,100])
 upper_yellow = np.array([35,255,255])
 
 #focal length
-f = 2171
+f_x = 2770.28
+f_y = 2765.57
+u1 = 1602.71
+v1 = 1200.56
 
-k_instrinsic = [[f]]
+k_instrinsic = [[f_x,0,u1],
+                [0,f_y,v1],
+                [0,0,1.0]]
+
+k_instrinsic_inverted = np.linalg.inv(k_instrinsic)
+
+dist_coef = [0.175, 0.133, -0.002, -0.008, -1.965]
 
 # Picam setup
 
@@ -44,7 +53,7 @@ picam2.configure(camera_config)
 #picam2.start_preview(Preview.NULL)
 picam2.start()
 
-def take_pic():
+def takePic():
     global query_pic
     print("Taking picture...")
 
@@ -61,6 +70,13 @@ def take_pic():
         picam2.switch_mode_and_capture_file(camera_config,"camera/src/Image/Queryimage.jpg")
         print("Took query picture...")
     print("Done taking picture!")
+
+def phantomMarker(red,blue,green,yellow):
+    
+    #code here 
+    i = 1
+
+    
 
 def imageProc(image):
 
@@ -131,9 +147,11 @@ def imageProc(image):
     # Calculate the center of the 4 colored markers
     center_point = [int((red_center[1] + blue_center[1] + green_center[1] + yellow_center[1])/4), int((red_center[0] + blue_center[0] + green_center[0] + yellow_center[0])/4)]
 
+    center_coords = [red_center[0],red_center[1],blue_center[0],blue_center[1],green_center[0],green_center[1],yellow_center[0],yellow_center[1]]
+
     print("Calculated center point and finished magic!")
     
-    return center_point
+    return center_point, center_coords
 
 
 def calculateDifference(center_point_reference,center_point_query):
@@ -147,18 +165,27 @@ def calculateDifference(center_point_reference,center_point_query):
     print("Euclidean Distance:",euc_dist)
     return calculated_difference
 
+def calculateRotationTranslation(center_coords_ref,center_coords_query):
+
+    red_marker = [center_coords_query[1],center_coords_query[0],1]
+    blue_marker = [center_coords_query[3],center_coords_query[2],1]
+    object_points = [k_instrinsic_inverted*red_marker]
+    print(object_points)
+
 while True:
 
-    take_pic()
+    takePic()
 
     im_reference = np.array(Image.open(str(abs_file_path)+"/Referenceimage.jpg"))
     im_query = np.array(Image.open(str(abs_file_path)+"/Queryimage.jpg"))
 
     if query_img == 0:
-        center_point_reference = imageProc(im_reference)
+        center_point_reference, center_coords_ref = imageProc(im_reference)
         query_img += 1
     if query_img == 1:
-        center_point_query = imageProc(im_query)
+        center_point_query, center_coords_query = imageProc(im_query)
+
+    calculateRotationTranslation(center_coords_ref,center_coords_query)
     
     # cv2.imshow("query", im_query)
     # cv2.waitKey(0)
