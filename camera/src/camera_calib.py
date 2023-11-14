@@ -8,8 +8,8 @@ import pickle
 
 def Calibrate():
     # Number of object points
-    num_intersections_in_x = 7
-    num_intersections_in_y = 7
+    num_intersections_in_x = 6
+    num_intersections_in_y = 8
     
     # Size of square in meters
     square_size = 0.025
@@ -23,29 +23,37 @@ def Calibrate():
     object_points[:,:2] = np.mgrid[0:7, 0:7].T.reshape(-1,2)
     object_points = object_points*square_size
     
-    fnames = glob.glob('/path/to/folder/pi_sensor_setup/camera_calibration/images/'+'*.'+'jpg')
+    fnames = glob.glob('camera/src/Images/'+'*.'+'jpg')
     
     
     for fname in fnames:
+        print("reading file...")
         img = cv2.imread(fname)
+        print(img)
+        print("file read :)")
         img_size = (img.shape[1], img.shape[0])
         gray_scale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # Find chess board corners
+        print("Finding chess board corners")
         ret, corners = cv2.findChessboardCorners(gray_scale, (num_intersections_in_x, num_intersections_in_y), None)
-        
+        print("Found Corners")
         if ret:
+            print("Appending points")
             obj_points.append(object_points)
+            print("And corners")
             img_points.append(corners)
             
+            print("drawing the corners")
             # Draw the corners
             drawn_img = cv2.drawChessboardCorners(img, (7,7), corners, ret)
             # Uncomment the below code (43-47) if you want to visualize the detected corners
-            # drawn_img = cv2.resize(drawn_img, (500,500))
-            # cv2.namedWindow("main", cv2.WINDOW_NORMAL)
-            # cv2.imshow("main", drawn_img)
-            # cv2.waitKey(0)
-
+            drawn_img = cv2.resize(drawn_img, (500,500))
+            cv2.namedWindow("main", cv2.WINDOW_NORMAL)
+            cv2.imshow("main", drawn_img)
+            cv2.waitKey(0)
+    
+    print("calibrating camera")
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(obj_points, img_points, img_size, None, None)
 
     img = cv2.imread(fnames[19])

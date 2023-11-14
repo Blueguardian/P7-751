@@ -23,8 +23,9 @@ image = picam2.capture_image("main")
 reg_image = np.array(image)
 
 while i < 20:
-    picam2.switch_mode_and_capture_file(camera_config,"camera/src/Images/Chess.jpg"+str(i))
-    cv2.imshow("chess:"+str(i), str(abs_file_path)+"Chess"+str(i))
+    picam2.switch_mode_and_capture_file(camera_config,"camera/src/Images/Chess"+str(i)+".jpg")
+    chess = cv2.imread(str(abs_file_path)+"/Chess"+str(i)+".jpg")
+    cv2.imshow("chess:",chess)
     cv2.waitKey(0)
     i += 1
     
