@@ -190,7 +190,7 @@ def calculateRotationTranslation(center_coords_ref,center_coords_query):
                     green_marker,
                     yellow_marker], dtype= "double")
     
-    succes, rvec, tvec = cv2.solvePnP(object_points, image_points, k_instrinsic, dist_coef, flags = 0)
+    succes, rvec, tvec = cv2.solvePnP_(object_points, image_points, k_instrinsic, dist_coef, flags = 0)
 
     print(object_points)
     print("rotation vector:", rvec)
