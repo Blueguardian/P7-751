@@ -42,7 +42,6 @@ void loop() {
         blinkState = !blinkState;
 
     digitalWrite(LED_BUILTIN, blinkState);
-    // delay(100);
 }
 
 

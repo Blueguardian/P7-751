@@ -2,6 +2,8 @@
 
 
 GY88_Sensors sensors;
+bool blinkState = false;
+
 
 void setup() {
 	Serial.begin(115200);
@@ -17,7 +19,7 @@ void setup() {
 }
 
 void loop() {
-    while (!Serial){ data_sent=false; delay(10); } // Checking if anyone is still connected.
+    while (!Serial){ delay(10); } // Checking if anyone is still connected.
 	
     sensors.update();
 	sensors.print();

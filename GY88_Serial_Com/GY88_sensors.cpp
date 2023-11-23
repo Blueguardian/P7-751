@@ -92,7 +92,7 @@ void GY88_Sensors::print() {
     Serial.print("(Barom) \tTemp: " + String(barom.temp) + " ºC");
     Serial.print(" \tPress: " + String(barom.press) + " hPa");
     Serial.print(" \tAlt: " + String(barom.alt) + " m");
-    Serial.print(" \tSea_lvl_press: " + String(barom.sea_lvl_press) + " hPa");
+    Serial.println(" \tSea_lvl_press: " + String(barom.sea_lvl_press) + " hPa");
 }
 
 void GY88_Sensors::get_sensors_ranges() {
