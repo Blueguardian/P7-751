@@ -14,6 +14,8 @@ void setup() {
     
 	while(!sensors.begin()){ delay(2000); }
 
+    sensors.barom.sea_lvl_press = 1011; // hPa checked on the web.
+
     sensors.calibrate();
     digitalWrite(LED_BUILTIN, blinkState); // Led on indicating that the sensors are already calibrated.
 }

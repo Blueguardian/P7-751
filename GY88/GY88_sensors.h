@@ -43,6 +43,7 @@ class GY88_Sensors{
 			float press;		    // hPa
 			float alt;			    // m
 			float sea_lvl_press;    // hPa
+            float alt_offset = 0;
 		} barom;
 
 		GY88_Sensors(float declination_angle = 0.0698132, float sea_lvl_press = SENSORS_PRESSURE_SEALEVELHPA);

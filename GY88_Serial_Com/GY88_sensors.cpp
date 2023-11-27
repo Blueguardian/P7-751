@@ -13,8 +13,8 @@ bool GY88_Sensors::begin() {
 
     if (!mpu.testConnection())  { Serial.println("Failed to find MPU6050 chip"); return false; }
     if (!hmc.begin())           { Serial.println("Failed to find HMC5883 chip"); return false; }
-    //if (!bmp.begin())           { Serial.println("Failed to find BMP085  chip"); return false; }
-    if (!bmp.begin(BMP085_MODE_ULTRALOWPOWER))  { Serial.println("Failed to find BMP085  chip"); return false; } // bmp faster but with bigger error.
+    if (!bmp.begin())           { Serial.println("Failed to find BMP085  chip"); return false; }
+    //if (!bmp.begin(BMP085_MODE_ULTRALOWPOWER))  { Serial.println("Failed to find BMP085  chip"); return false; } // bmp faster but with bigger error.
 
 
     return true;
@@ -64,7 +64,7 @@ void GY88_Sensors::update() {
     bmp.getTemperature(&barom.temp);        // temp in deg.
     bmp.getPressure(&barom.press);          // press in kPa*10.
     barom.press /= 100;                    // press in hPa.
-    barom.alt = bmp.pressureToAltitude(barom.sea_lvl_press, barom.press);   // Param: (sea level pressure in hPa, current pressure in hPa). altitude in m.
+    barom.alt = bmp.pressureToAltitude(barom.sea_lvl_press, barom.press) - barom.alt_offset;   // Param: (sea level pressure in hPa, current pressure in hPa). altitude in m.
     //barom.sea_lvl_press = bmp.seaLevelForAltitude(barom.alt, barom.press); // Param: (current altitude (m), curent pressure (hPa)). Pressure at sea level in hPa.
 }
 
@@ -193,6 +193,7 @@ void GY88_Sensors::get_offsets(){
 
     Serial.println("Accel offsets: " + String(ax) + " , " + String(ay) + " , " + String(az));
     Serial.println("Gyro offsets: "  + String(gx) + " , " + String(gy) + " , " + String(gz));
+    Serial.println("Barom offset: "  + String(barom.alt_offset));
 }
 
 void GY88_Sensors::calibrate(){
@@ -204,6 +205,15 @@ void GY88_Sensors::calibrate(){
     int16_t *offsets = mpu.GetActiveOffsets();
     set_accel_offsets(offsets[0], offsets[1], offsets[2]);
     set_gyro_offsets(offsets[3], offsets[4], offsets[5]);
+
+    float press = 0;
+    float temp=0;
+    for(int i=0; i<50; i++){ 
+        bmp.getPressure(&temp); 
+        press+=temp;
+    }
+    press /= 50*100;
+    barom.alt_offset = bmp.pressureToAltitude(barom.sea_lvl_press, press);
 
     get_offsets();
 
