@@ -59,15 +59,19 @@ class tcp_client_test:
         """
         self.__serverSocket.close()
 
-    def __receive_length(cls):
+    def __receive_length(self):
         """
         Object method __receive_length used to obtain the length of the incoming data
         :return: int: length of incoming message or data
         """
-        data = cls.__serverSocket.recv(cls.__LEN_SIZE)
-        data = data.decode(cls.__FORMAT)
-        length = eval(data.split('-')[1].lstrip("0"))
-        return length
+        data = self.__serverSocket.recv(self.__LEN_SIZE)
+        data = data.decode(self.__FORMAT)
+        try:
+            length = eval(data.split('-')[1].lstrip("0"))
+        except Exception as e:
+            return "Faulty length"
+        else:
+            return length
 
     def receiveMsg(self):
         """
@@ -94,6 +98,8 @@ class tcp_client_test:
         """
         try:
             length = self.__receive_length()
+            if isinstance(length, str):
+                return "LENGTH_INVALID error"
             data = self.__serverSocket.recv(length)
         except socket.error:
             return "SOCKET_TIMEOUT error"
@@ -143,55 +149,65 @@ class tcp_client_test:
 """Test setup for the classes"""
 """Receives 'ack' before continuing to ensure a fully established connection"""
 """Sends different types of data to the server for processing"""
-
+# Real ip host='192.168.0.101'
 # Instantiate client object
-client = tcp_client_test(host='192.168.0.101')
-
-# Still not tested for other types than ndarray
-
-# "Main function" only used due to class definition above
-if __name__ == "__main__":
-    ack = None # Initialise ack variable
-    while ack != 'ack':
-        client.sendMsg('ack') # Reassign until ack == 'ack'
-        ack = client.receiveMsg() # Send 'ack' to server
-
-    # Define different data type for testing the setup
-    data_fun1 = np.zeros((5, 5))
-    data_fun2 = np.zeros((5, 5, 2))
-    data_fun3 = np.zeros((3, 1))
-    data_fun4 = np.zeros((1))
-    data_fun5 = np.zeros((4, 4))
-    data_fun5[0, 0] = math.cos(5)
-    data_fun5[0, 1] = -math.sin(5)
-    data_fun5[0, 3] = 411.0
-    data_fun5[1, ] = math.sin(5)*math.cos(50)
-    data_fun5[1, 1] = math.cos(5)*math.cos(50)
-    data_fun5[1, 2] = -math.sin(50)
-    data_fun5[1, 3] = math.cos(50)*112.0
-    data_fun5[2, 0] = math.sin(5)*math.sin(50)
-    data_fun5[2, 1] = math.cos(5)*math.sin(50)
-    data_fun5[2, 2] = math.cos(50)
-    data_fun5[2, 3] = math.cos(50)*112.0
-    data_fun5[3, 3] = 1.0
-    i = 0 # Iterator
-    sleep(2) # Wait 2 seconds before sending all the data
-    while True:
-        if i < 1:
-            check = client.sendData(data_fun1) # Send 2D Matrix
-            print(check)
-        elif i == 1:
-            check = client.sendData(data_fun2) # Send 3D Matrix
-            print(check)
-        elif i == 2:
-            check = client.sendData(data_fun3) # Send Vector
-            print(check)
-        elif i == 3:
-            check = client.sendData(data_fun4) # Send Value
-            print(check)
-        elif i > 3 and i < 5:
-            check = client.sendData(data_fun5) # Send transformation matrix
-            print(check)
-        i += 1
-
+# client = tcp_client_test()
+#
+# # Still not tested for other types than ndarray
+#
+# # "Main function" only used due to class definition above
+# if __name__ == "__main__":
+#
+#     origin = None
+#     rcv_data = None
+#     # Define different data type for testing the setup
+#     data_fun1 = np.zeros((5, 5))
+#     data_fun2 = np.zeros((5, 5, 2))
+#     data_fun3 = np.zeros((3, 1))
+#     data_fun4 = np.zeros((1))
+#     data_fun5 = np.zeros((4, 4))
+#     data_fun5[0, 0] = math.cos(5)
+#     data_fun5[0, 1] = -math.sin(5)
+#     data_fun5[0, 3] = 411.0
+#     data_fun5[1,] = math.sin(5) * math.cos(50)
+#     data_fun5[1, 1] = math.cos(5) * math.cos(50)
+#     data_fun5[1, 2] = -math.sin(50)
+#     data_fun5[1, 3] = math.cos(50) * 112.0
+#     data_fun5[2, 0] = math.sin(5) * math.sin(50)
+#     data_fun5[2, 1] = math.cos(5) * math.sin(50)
+#     data_fun5[2, 2] = math.cos(50)
+#     data_fun5[2, 3] = math.cos(50) * 112.0
+#     data_fun5[3, 3] = 1.0
+#     i = 0  # Iterator
+#     while i < 5:
+#         if i < 1:
+#             check = client.sendData(data_fun1)  # Send 2D Matrix
+#             print(check)
+#         elif i == 1:
+#             check = client.sendData(data_fun2)  # Send 3D Matrix
+#             print(check)
+#         elif i == 2:
+#             check = client.sendData(data_fun3)  # Send Vector
+#             print(check)
+#         elif i == 3:
+#             check = client.sendData(data_fun4)  # Send Value
+#             print(check)
+#         elif i > 3 and i < 5:
+#             check = client.sendData(data_fun5, "final")  # Send transformation matrix
+#             print(check)
+#         i += 1
+#     while origin != "final":
+#         rcv_data = client.receiveData()
+#         if isinstance(rcv_data, tuple):
+#             origin = rcv_data[0]
+#             rcv_data = rcv_data[1]
+#             print(f"Origin: {origin}")
+#             print(rcv_data)
+#         else:
+#             continue
+#         if isinstance(rcv_data, str):  # If it is a string (An error)
+#             continue
+#         else:
+#             print(origin)
+#             print(rcv_data)  # Otherwise print the received data
 

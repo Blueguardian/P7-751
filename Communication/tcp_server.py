@@ -80,8 +80,12 @@ class TCPServer:
         """
         data = cls.connection.recv(cls.__LEN_SIZE)
         data = data.decode(cls.__FORMAT)
-        length = eval(data.split('-')[1].lstrip("0"))
-        return length
+        try:
+            length = eval(data.split('-')[1].lstrip("0"))
+        except Exception.with_traceback():
+            return "Faulty length"
+        else:
+            return length
 
     def receiveMsg(self):
         """
@@ -107,6 +111,8 @@ class TCPServer:
         """
         try:
             length = self.__receive_length()
+            if isinstance(length, str):
+                return "LENGTH_INVALID error"
             data = self.connection.recv(length)
         except socket.error:
             return "SOCKET_TIMEOUT error"
@@ -118,7 +124,7 @@ class TCPServer:
                 origin, in_data = self.__PARSER.parse_xml(temp)
                 return origin, in_data
 
-    def sendData(self, data, origin=None):
+    def sendData(self, data, origin="None"):
         """
         Instance method, used for sending xml formatted data to the socket stream, utilises internal methods and embedded
         class for processing the data. Returns error if socket is closed or the connection timed out.
@@ -128,7 +134,7 @@ class TCPServer:
         """
         try:
             out_data = self.__PARSER.process_xml(data, origin)
-            length = b'-'+bytes(f"{len(data)}".zfill(self.__LEN_SIZE), encoding='utf-8') + b'-'
+            length = b'-' + f"{len(out_data)}".zfill(8).encode(self.__FORMAT) + b'-'
             out_data = length + out_data
             if not isinstance(out_data, bytes):
                 out_data = out_data.encode(self.__FORMAT)
@@ -157,19 +163,59 @@ class TCPServer:
 """Receives 'ack' before continuing to ensure a fully established connection"""
 """Waits for data and only prints it if the type is not a string (Not and error)"""
 
-# #Instantiate server object instance
+#Instantiate server object instance
 # server = TCPServer()
 #
+# import numpy as np
+# import math
+# from time import sleep
 # #"Main function" only used due to class definition above
 # if __name__ == "__main__":
-#     ack = None # Initialise ack variable
-#     while ack != 'ack':
-#         ack = server.receiveMsg() # Reassign until ack == 'ack'
-#         server.sendMsg('ack\f') # Send 'ack' to client
-#     while True:
-#         origin, rcv_data = server.receiveData() # Receive data
-#         if isinstance(rcv_data, str): # If it is a string (An error)
-#             continue
+#     origin = None
+#     rcv_data = None
+#
+#     while origin != "final":
+#         rcv_data = server.receiveData() # Receive data
+#         if isinstance(rcv_data, tuple):
+#             origin = rcv_data[0]
+#             rcv_data = rcv_data[1]
+#             print(f"Origin: {origin}")
+#             print(rcv_data)
 #         else:
-#             print(origin)
-#             print(rcv_data) # Otherwise print the received data
+#             continue
+#     data_fun1 = np.zeros((5, 5))
+#     data_fun2 = np.zeros((5, 5, 2))
+#     data_fun3 = np.zeros((3, 1))
+#     data_fun4 = np.zeros((1))
+#     data_fun5 = np.zeros((4, 4))
+#     data_fun5[0, 0] = math.cos(5)
+#     data_fun5[0, 1] = -math.sin(5)
+#     data_fun5[0, 3] = 411.0
+#     data_fun5[1,] = math.sin(5) * math.cos(50)
+#     data_fun5[1, 1] = math.cos(5) * math.cos(50)
+#     data_fun5[1, 2] = -math.sin(50)
+#     data_fun5[1, 3] = math.cos(50) * 112.0
+#     data_fun5[2, 0] = math.sin(5) * math.sin(50)
+#     data_fun5[2, 1] = math.cos(5) * math.sin(50)
+#     data_fun5[2, 2] = math.cos(50)
+#     data_fun5[2, 3] = math.cos(50) * 112.0
+#     data_fun5[3, 3] = 1.0
+#     i = 0  # Iterator
+#     # Wait 2 seconds before sending all the data
+#     while i < 5:
+#         if i < 1:
+#             check = server.sendData(data_fun1)  # Send 2D Matrix
+#             print(check)
+#         elif i == 1:
+#             check = server.sendData(data_fun2)  # Send 3D Matrix
+#             print(check)
+#         elif i == 2:
+#             check = server.sendData(data_fun3)  # Send Vector
+#             print(check)
+#         elif i == 3:
+#             check = server.sendData(data_fun4)  # Send Value
+#             print(check)
+#         elif i > 3 and i < 5:
+#             check = server.sendData(data_fun5, "final")  # Send transformation matrix
+#             print(check)
+#         i += 1
