@@ -190,11 +190,28 @@ def calculateRotationTranslation(center_coords_ref,center_coords_query):
                     green_marker,
                     yellow_marker], dtype= "double")
     
-    succes, rvec, tvec = cv2.solvePnP_(object_points, image_points, k_instrinsic, dist_coef, flags = 0)
+    succes, rvec, tvec = cv2.solvePnP(object_points, image_points, k_instrinsic, dist_coef, flags = cv2.SOLVEPNP_IPPE)
 
     print(object_points)
     print("rotation vector:", rvec)
-    print("Translational vector:", tvec)
+    print("Translational vector:", tvec.shape)
+
+    print(tvec[0].ndim)
+    rot_matrix = np.array([])
+    rot = cv2.Rodrigues(rvec,rot_matrix)
+
+    print(rot[0])
+    trans_matrix = np.array([
+        [1.0,0.0,tvec[0,0]],
+        [0.0,1.0,tvec[1,0]]
+    ])
+
+    rotated_image = cv2.warpPerspective(src = im_query,dst = None,M = rot[0],dsize = (3280,2464))
+    trans_image = cv2.warpAffine(rotated_image,trans_matrix,(3280,2464))
+
+    cv2.imshow("opencv sutter",trans_image)
+    cv2.waitKey(0)
+
     return rvec, tvec
 
 while True:
