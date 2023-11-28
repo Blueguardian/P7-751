@@ -1,11 +1,12 @@
 import cv2, time
-from picamera2 import Picamera2, Preview
-from libcamera import ColorSpace
+from picamera2 import Picamera2
 from PIL import Image
 import numpy as np
-from matplotlib import pyplot as plt
-from matplotlib import colors
 import os
+import multiprocessing
+from multiprocessing import SimpleQueue, Lock
+from Communication.SerialCom_pi import TeensyCom
+from Communication.tcp_server import TCPServer
 
 # Global variables declaration
 query_pic = 0
@@ -84,10 +85,10 @@ def takePic():
         print("Took query picture...")
     print("Done taking picture!")
 
-def phantomMarker(red,blue,green,yellow):
-    
-    #code here 
-    i = 1
+# def phantomMarker(red,blue,green,yellow):
+#
+#     #code here
+#     i = 1
 
     
 
@@ -196,28 +197,48 @@ def calculateRotationTranslation(center_coords_ref,center_coords_query):
     print("rotation vector:", rvec)
     print("Translational vector:", tvec)
     return rvec, tvec
+def image_acq_proc(lock, queue):
+    while True:
 
-while True:
+        takePic()
 
-    takePic()
+        im_reference = np.array(Image.open(str(abs_file_path)+"/Referenceimage.jpg"))
+        im_query = np.array(Image.open(str(abs_file_path)+"/Queryimage.jpg"))
 
-    im_reference = np.array(Image.open(str(abs_file_path)+"/Referenceimage.jpg"))
-    im_query = np.array(Image.open(str(abs_file_path)+"/Queryimage.jpg"))
+        if query_img == 0:
+            center_point_reference, center_coords_ref = imageProc(im_reference)
+            query_img += 1
+        if query_img == 1:
+            center_point_query, center_coords_query = imageProc(im_query)
 
-    if query_img == 0:
-        center_point_reference, center_coords_ref = imageProc(im_reference)
-        query_img += 1
-    if query_img == 1:
-        center_point_query, center_coords_query = imageProc(im_query)
+        # calculateRotationTranslation(center_coords_ref,center_coords_query)
+        lock.acquire()
+        queue.put(center_coords_query)
+        lock.release()
+        # cv2.imshow("query", im_query)
+        # cv2.waitKey(0)
+        calculateDifference(center_point_reference,center_point_query)
 
-    calculateRotationTranslation(center_coords_ref,center_coords_query)
-    
-    # cv2.imshow("query", im_query)
-    # cv2.waitKey(0)
-    calculateDifference(center_point_reference,center_point_query)
-    
+def comm(lock, queue):
+    #Instantiate server object instance
+    server = TCPServer()
+    dummy_data = np.array([3,3,3])
+    image_data = None
+    while True:
+        origin, rcv_data = server.sendData(dummy_data) # Receive data
+        lock.acquire()
+        if not queue.isEmpty():
+            image_data = np.array([queue.get()])
+            lock.release()
+            if isinstance(rcv_data, str): # If it is a string (An error)
+                continue
+            else:
+                server.sendData(image_data)
 
-
-
-
+if __name__ == '__main__':
+    Manager = multiprocessing.Manager()
+    mutex = Lock()
+    queue = SimpleQueue()
+    p1 = multiprocessing.Process(target=image_acq_proc, args=(mutex, queue))
+    p2 = multiprocessing.Process(target=comm, args=(mutex, queue))
 
