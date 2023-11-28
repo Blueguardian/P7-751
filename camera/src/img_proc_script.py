@@ -75,7 +75,7 @@ def takePic():
     global query_pic
     print("Taking picture...")
 
-    time.sleep(1)
+    #time.sleep(1)
     image = picam2.capture_image("main")
     reg_image = np.array(image)
 
@@ -204,6 +204,7 @@ def calculateRotationTranslation(center_coords_ref,center_coords_query):
 
     
 def image_acq_proc(lock, queue):
+    print("im in image acq and processing")
     while True:
 
         takePic()
@@ -226,25 +227,41 @@ def image_acq_proc(lock, queue):
         calculateDifference(center_point_reference,center_point_query)
 
 def comm(lock, queue):
+    print("Im in comm function")
     #Instantiate server object instance
-    server = TCPServer()
+    server = TCPServer(host='192.168.0.101')
     dummy_data = np.array([3,3,3])
     image_data = None
+    print("Set up dummy data")
     while True:
-        origin, rcv_data = server.sendData(dummy_data) # Receive data
-        lock.acquire()
-        if not queue.isEmpty():
+        print("Im in infinite loop now")
+        server.sendData(dummy_data) # Receive data
+        print("recieved data")
+        lock.acquire(block=False)
+        print("lock acquired")
+        if not queue.empty():
+            print("que not empty :)")
             image_data = np.array([queue.get()])
             lock.release()
             if isinstance(rcv_data, str): # If it is a string (An error)
+                print("Continuing...")
                 continue
             else:
+                print("Sending data")
                 server.sendData(image_data)
+        print("something went wrong, consult IT")
 
 if __name__ == '__main__':
     Manager = multiprocessing.Manager()
+    print("setting up lock")
     mutex = Lock()
+    print("setting up que")
     queue = SimpleQueue()
-    p1 = multiprocessing.Process(target=image_acq_proc, args=(mutex, queue))
-    p2 = multiprocessing.Process(target=comm, args=(mutex, queue))
+    print("setting up multiprocess p2")
+    p2 = multiprocessing.Process(target=comm, args=(mutex, queue)).start()
+    #p2.join()
+    print("setting up multiproces p1")
+    p1 = multiprocessing.Process(target=image_acq_proc, args=(mutex, queue)).start()
+    #p1.join()
+    
 
