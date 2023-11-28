@@ -5,8 +5,12 @@ import numpy as np
 import os
 import multiprocessing
 from multiprocessing import SimpleQueue, Lock
-from Communication.SerialCom_pi import TeensyCom
-from Communication.tcp_server import TCPServer
+import sys
+
+sys.path.insert(1,'/home/g751/Desktop/Project/P7-751/Communication/')
+
+from SerialCom_pi import TeensyCom
+from tcp_server import TCPServer
 
 # Global variables declaration
 query_pic = 0
@@ -197,6 +201,8 @@ def calculateRotationTranslation(center_coords_ref,center_coords_query):
     print("rotation vector:", rvec)
     print("Translational vector:", tvec)
     return rvec, tvec
+
+    
 def image_acq_proc(lock, queue):
     while True:
 
