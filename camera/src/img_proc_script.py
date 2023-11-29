@@ -26,8 +26,8 @@ upper_red = np.array([10,255,255])
 lower_red_end = np.array([170,100,100])
 upper_red_end = np.array([179,255,255])
 
-lower_blue = np.array([110,100,100])
-upper_blue = np.array([130,255,255])
+lower_blue = np.array([105,100,100])
+upper_blue = np.array([140,255,255])
 
 lower_green = np.array([40,50,50])
 upper_green = np.array([80,255,255])
@@ -51,12 +51,7 @@ dist_coef = np.array([0.175, 0.133, -0.002, -0.008, -1.965],dtype="double")
 
 # Picam setup
 
-picam2 = Picamera2()
-cv2.startWindowThread()
-camera_config = picam2.create_still_configuration(main={"format": 'BGR888', "size": (3280, 2464)})
-picam2.configure(camera_config)
-#picam2.start_preview(Preview.NULL)
-picam2.start()
+
 
 # Hard coded global coordinates for markers in mm [x,y,z]
 
@@ -71,20 +66,28 @@ object_points = np.array([red,
                  yellow], dtype="double")
 
 
-def takePic():
+def takePic(picam2, camera_config):
+    print("im in takepic")
+    
+    #cv2.startWindowThread()
+    #picam2.start_preview(Preview.NULL)
+    
     global query_pic
     print("Taking picture...")
 
-    #time.sleep(1)
-    image = picam2.capture_image("main")
-    reg_image = np.array(image)
+    time.sleep(2)
+    #image = picam2.capture_image("main")
+    #reg_image = np.array(image)
 
-    print(reg_image.shape)
+    #print(reg_image.shape)
+    
     if query_pic == 0:
+        print("query pic = 0")
         picam2.switch_mode_and_capture_file(camera_config,"camera/src/Image/Referenceimage.jpg")
         query_pic += 1
         print("Took reference picture...")
     if query_pic == 1:
+        print("query pic = 1")
         picam2.switch_mode_and_capture_file(camera_config,"camera/src/Image/Queryimage.jpg")
         print("Took query picture...")
     print("Done taking picture!")
@@ -97,11 +100,26 @@ def takePic():
     
 
 def imageProc(image):
+    global lower_red     
+    global upper_red 
+    global lower_red_end 
+    global upper_red_end 
+    global lower_blue  
+    global upper_blue 
+    global lower_green    
+    global upper_green  
+    global lower_yellow 
+    global upper_yellow  
 
+    global image_center
+    #print(image)
+
+    
     print("starting image magic...")
     # Convert to HSV
     image_hsv = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
 
+    print("image shape:",image_hsv.shape)
     # Create the different masks using the boundaries set before
     mask_red_end = cv2.inRange(image_hsv,lower_red_end,upper_red_end)
     mask_red = cv2.inRange(image_hsv,lower_red,upper_red)
@@ -109,6 +127,7 @@ def imageProc(image):
     mask_green = cv2.inRange(image_hsv,lower_green, upper_green)
     mask_yellow = cv2.inRange(image_hsv,lower_yellow, upper_yellow)
 
+    
     # Add the two masks for red as their are in opposite ends of the HSV spectrum
     mask_red = cv2.bitwise_or(mask_red,mask_red_end)
 
@@ -118,6 +137,7 @@ def imageProc(image):
     masked_blue = cv2.bitwise_and(image,image,mask=mask_blue)
     masked_green = cv2.bitwise_and(image,image,mask=mask_green)
     masked_yellow = cv2.bitwise_and(image,image,mask=mask_yellow)
+    print(masked_red)
 
     # Median blur the image to remove salt and pepper noise and then perform opening to eliminate more noise
     masked_red_median = cv2.medianBlur(masked_red,3)
@@ -129,6 +149,8 @@ def imageProc(image):
     masked_yellow_median = cv2.medianBlur(masked_yellow,3)
     masked_yellow_median_opening = cv2.morphologyEx(masked_yellow_median, cv2.MORPH_OPEN, np.ones((7,7),np.uint8))
 
+    # cv2.imshow("blue",masked_blue_median_opening)
+    # cv2.waitKey(0)
     print("Abracadabra it its now filtered...")
 
     # transpose the array and remove zero elements
@@ -137,6 +159,10 @@ def imageProc(image):
     mask_green_filtered = np.transpose(np.nonzero(masked_green_median_opening[:,:,0] > 0)) 
     mask_yellow_filtered = np.transpose(np.nonzero(masked_yellow_median_opening[:,:,0] > 0)) 
 
+    print("red:", mask_red_filtered.shape)
+    print("blue:", mask_blue_filtered.shape)
+    print("green:", mask_green_filtered.shape)
+    print("yellow:", mask_yellow_filtered.shape)
     # Find maximum and minimum values for x and y in all 4 color markers
     red_x_max = np.max(mask_red_filtered[:, 0])
     red_x_min =np.min(mask_red_filtered[:, 0])
@@ -205,17 +231,27 @@ def calculateRotationTranslation(center_coords_ref,center_coords_query):
     
 def image_acq_proc(lock, queue):
     print("im in image acq and processing")
+    global query_img
+    script_dir = os.path.dirname(__file__)
+    rel_path = "Image"
+    abs_file_path = os.path.join(script_dir, rel_path)
+    picam2 = Picamera2()
+    camera_config = picam2.create_still_configuration(main={"format": 'BGR888', "size": (3280, 2464)})
+    picam2.configure(camera_config)
+    picam2.start()
     while True:
 
-        takePic()
-
+        takePic(picam2, camera_config)
+        time.sleep(2)
         im_reference = np.array(Image.open(str(abs_file_path)+"/Referenceimage.jpg"))
         im_query = np.array(Image.open(str(abs_file_path)+"/Queryimage.jpg"))
-
+        #cv2.imshow("im_query",im_reference)
         if query_img == 0:
             center_point_reference, center_coords_ref = imageProc(im_reference)
             query_img += 1
+            time.sleep(1)
         if query_img == 1:
+            time.sleep(1)
             center_point_query, center_coords_query = imageProc(im_query)
 
         # calculateRotationTranslation(center_coords_ref,center_coords_query)
@@ -237,19 +273,24 @@ def comm(lock, queue):
         print("Im in infinite loop now")
         server.sendData(dummy_data) # Receive data
         print("recieved data")
-        lock.acquire(block=False)
-        print("lock acquired")
-        if not queue.empty():
-            print("que not empty :)")
-            image_data = np.array([queue.get()])
+        time.sleep(1)
+        if lock.acquire(block=False):
+            print("lock acquired")
+            if not queue.empty():
+                print("que not empty :)")
+                image_data = np.array([queue.get()])
+                lock.release()
+                if isinstance(image_data, str): # If it is a string (An error)
+                    print("Continuing...")
+                    continue
+                else:
+                    print("Sending data")
+                    server.sendData(image_data)
+        else:
             lock.release()
-            if isinstance(rcv_data, str): # If it is a string (An error)
-                print("Continuing...")
-                continue
-            else:
-                print("Sending data")
-                server.sendData(image_data)
+            continue
         print("something went wrong, consult IT")
+        
 
 if __name__ == '__main__':
     Manager = multiprocessing.Manager()
@@ -258,10 +299,11 @@ if __name__ == '__main__':
     print("setting up que")
     queue = SimpleQueue()
     print("setting up multiprocess p2")
-    p2 = multiprocessing.Process(target=comm, args=(mutex, queue)).start()
-    #p2.join()
+    p2 = multiprocessing.Process(target=comm, args=(mutex, queue))
+    p2.start()
     print("setting up multiproces p1")
-    p1 = multiprocessing.Process(target=image_acq_proc, args=(mutex, queue)).start()
-    #p1.join()
-    
+    p1 = multiprocessing.Process(target=image_acq_proc, args=(mutex, queue))
+    p1.start()
+    p1.join()
+    p2.join()
 
