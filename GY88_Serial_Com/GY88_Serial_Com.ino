@@ -28,7 +28,6 @@ void loop() {
 	//sensors.print();
 
     if(!data_sent){
-        //Serial.println("pito");
         sensors.print_xml();
         data_sent = true;
     }else if(Serial.available()){
