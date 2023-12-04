@@ -1,46 +1,34 @@
-#include "GY88_sensors.h"
+#include "Teensy.h"
 
-GY88_Sensors sensors;
+Teensy teensy;
 
 bool blinkState = true;
-bool data_sent = false;
-String line = String("");
 
 void setup() {
-	Serial.begin(115200);
-    Serial.setTimeout(0);
+    teensy.serial_com_setup();
 	
-    // configure Arduino LED pin for output
-    pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(LED_BUILTIN, OUTPUT);   // configure Arduino LED pin for output
     
-	while(!sensors.begin()){ delay(2000); }
+	while(!teensy.begin_sensors()){ delay(2000); } // Wait for all the sensors to be ready.
 
-    sensors.calibrate();
-    digitalWrite(LED_BUILTIN, blinkState); // Led on indicating that the sensors are already calibrated.
+    teensy.calibrate();
+    digitalWrite(LED_BUILTIN, HIGH); // Led on indicating that the sensors are already calibrated.
 }
 
 
-
 void loop() {
-    while (!Serial){ data_sent=false; delay(10); } // Checking if anyone is still connected.
+    teensy.await_for_connection(); // Checking if anyone is connected.
 	
-    sensors.update();
-	//sensors.print();
+    teensy.update_sensors();
 
-    if(!data_sent){
-        sensors.print_xml();
-        data_sent = true;
-    }else if(Serial.available()){
-        line = String(Serial.readString()); // python doesn't add EOL
-        data_sent = false;
-    }
-
+    teensy.send_receive(); // sends sensor data and reads commands through serial port.
 
     // blink LED to indicate activity
-    if(String("command: blink_enabled").equals(line))
+    if(String("command: blink_enabled").equals(teensy.command))
         blinkState = !blinkState;
 
     digitalWrite(LED_BUILTIN, blinkState);
+
 }
 
 
