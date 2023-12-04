@@ -66,6 +66,8 @@ void Teensy::update_sensors() {
     barom.press /= 100;                    // press in hPa.
     barom.alt = bmp.pressureToAltitude(barom.sea_lvl_press, barom.press) - barom.alt_offset;   // Param: (sea level pressure in hPa, current pressure in hPa). altitude in m.
     //barom.sea_lvl_press = bmp.seaLevelForAltitude(barom.alt, barom.press); // Param: (current altitude (m), curent pressure (hPa)). Pressure at sea level in hPa.
+
+    time_stamp = millis()
 }
 
 void Teensy::print() {
@@ -222,9 +224,9 @@ void Teensy::calibrate(){
 
 String Teensy::get_xml(){
     float m[3][6] = {
-                        {accel.x,       accel.y,        accel.z,    gyro.x,                 gyro.y,             gyro.z  },
-                        {magnet.x,      magnet.y,       magnet.z,   magnet.heading,         0,                  0       },
-                        {barom.temp,    barom.press,    barom.alt,  barom.sea_lvl_press,    0,                  0       }
+                        {accel.x,       accel.y,        accel.z,    gyro.x,                 gyro.y,             gyro.z      },
+                        {magnet.x,      magnet.y,       magnet.z,   magnet.heading,         0,                  0           },
+                        {barom.temp,    barom.press,    barom.alt,  barom.sea_lvl_press,    0,                  time_stamp  }
                     };
 
     String str = "<Matrix type=\"np.float64\" origin=\"IMU\">";
