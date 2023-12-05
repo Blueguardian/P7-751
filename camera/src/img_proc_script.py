@@ -15,7 +15,7 @@ from tcp_server import TCPServer
 # Global variables declaration
 query_pic = 0
 query_img = 0
-image_center = [int(2464/2),int(3280/2)]
+image_center = [int(1080/2),int(1920/2)]
 
 script_dir = os.path.dirname(__file__)
 rel_path = "Image"
@@ -75,7 +75,7 @@ def takePic(picam2, camera_config):
     global query_pic
     print("Taking picture...")
 
-    time.sleep(2)
+    time.sleep(0.2)
     #image = picam2.capture_image("main")
     #reg_image = np.array(image)
 
@@ -100,6 +100,7 @@ def takePic(picam2, camera_config):
     
 
 def imageProc(image):
+
     global lower_red     
     global upper_red 
     global lower_red_end 
@@ -119,7 +120,7 @@ def imageProc(image):
     # Convert to HSV
     image_hsv = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
 
-    print("image shape:",image_hsv.shape)
+    #print("image shape:",image_hsv.shape)
     # Create the different masks using the boundaries set before
     mask_red_end = cv2.inRange(image_hsv,lower_red_end,upper_red_end)
     mask_red = cv2.inRange(image_hsv,lower_red,upper_red)
@@ -137,7 +138,7 @@ def imageProc(image):
     masked_blue = cv2.bitwise_and(image,image,mask=mask_blue)
     masked_green = cv2.bitwise_and(image,image,mask=mask_green)
     masked_yellow = cv2.bitwise_and(image,image,mask=mask_yellow)
-    print(masked_red)
+    #print(masked_red)
 
     # Median blur the image to remove salt and pepper noise and then perform opening to eliminate more noise
     masked_red_median = cv2.medianBlur(masked_red,3)
@@ -159,10 +160,10 @@ def imageProc(image):
     mask_green_filtered = np.transpose(np.nonzero(masked_green_median_opening[:,:,0] > 0)) 
     mask_yellow_filtered = np.transpose(np.nonzero(masked_yellow_median_opening[:,:,0] > 0)) 
 
-    print("red:", mask_red_filtered.shape)
-    print("blue:", mask_blue_filtered.shape)
-    print("green:", mask_green_filtered.shape)
-    print("yellow:", mask_yellow_filtered.shape)
+#    print("red:", mask_red_filtered.shape)
+    #print("blue:", mask_blue_filtered.shape)
+    #print("green:", mask_green_filtered.shape)
+    #print("yellow:", mask_yellow_filtered.shape)
     # Find maximum and minimum values for x and y in all 4 color markers
     red_x_max = np.max(mask_red_filtered[:, 0])
     red_x_min =np.min(mask_red_filtered[:, 0])
@@ -230,31 +231,38 @@ def calculateRotationTranslation(center_coords_ref,center_coords_query):
 
     
 def image_acq_proc(lock, queue):
+    
     print("im in image acq and processing")
     global query_img
     script_dir = os.path.dirname(__file__)
     rel_path = "Image"
     abs_file_path = os.path.join(script_dir, rel_path)
     picam2 = Picamera2()
-    camera_config = picam2.create_still_configuration(main={"format": 'BGR888', "size": (3280, 2464)})
+    camera_config = picam2.create_still_configuration(main={"format": 'BGR888', "size": (1920, 1080)})
     picam2.configure(camera_config)
     picam2.start()
     while True:
-
+        start = time.time()
         takePic(picam2, camera_config)
-        time.sleep(2)
+        #time.sleep(2)
         im_reference = np.array(Image.open(str(abs_file_path)+"/Referenceimage.jpg"))
         im_query = np.array(Image.open(str(abs_file_path)+"/Queryimage.jpg"))
+        end = time.time()
+        print(end-start)
         #cv2.imshow("im_query",im_reference)
         if query_img == 0:
             center_point_reference, center_coords_ref = imageProc(im_reference)
             query_img += 1
-            time.sleep(1)
+            #time.sleep(1)
         if query_img == 1:
-            time.sleep(1)
+            #time.sleep(1)
+            start_image_proc = time.time()
             center_point_query, center_coords_query = imageProc(im_query)
+            end_image_proc = time.time()
+            print("image proc:",end_image_proc - start_image_proc)
 
         # calculateRotationTranslation(center_coords_ref,center_coords_query)
+        
         lock.acquire()
         queue.put(center_coords_query)
         lock.release()
