@@ -24,17 +24,17 @@ void Teensy::update_sensors() {
     mpu.getMotion6(&raw_ax, &raw_ay, &raw_az, &raw_gx, &raw_gy, &raw_gz);
     hmc.getEvent(&temp_mag);
 
-    float gyro_factor  = 32768. / ( 250 * pow(2, mpu.getFullScaleGyroRange())  );
-    float accel_factor = 32768. / ( 2   * pow(2, mpu.getFullScaleAccelRange()) );
+    short gyro_range = 250 * pow(2, mpu.getFullScaleAccelRange()); // 250, 500, 1000, 2000.
+    short acc_range  = 2   * pow(2, mpu.getFullScaleAccelRange()); // 2, 4, 8, 16.
 
-    accel.x = raw_ax / accel_factor * GRAVITY;
-    accel.y = raw_ay / accel_factor * GRAVITY;
-    accel.z = raw_az / accel_factor * GRAVITY; 
+    accel.x = map((float)raw_ax, -32768, 32757, -acc_range, acc_range) * GRAVITY;               // scaling from raw measures to real values.
+    accel.y = map((float)raw_ay, -32768, 32757, -acc_range, acc_range) * GRAVITY;      
+    accel.z = map((float)raw_az, -32768, 32757, -acc_range, acc_range) * GRAVITY - GRAVITY;     // same + removing gravity.
     accel.sqrt =  sqrt(pow(accel.x, 2) + pow(accel.y, 2) + pow(accel.z, 2));
 
-    gyro.x = (raw_gx / gyro_factor) * M_PI / 180; // rad/s
-    gyro.y = (raw_gy / gyro_factor) * M_PI / 180;
-    gyro.z = (raw_gz / gyro_factor) * M_PI / 180;
+    gyro.x = map((float)raw_gx,-32768, 32757, -gyro_range, gyro_range) * M_PI / 180; // rad/s
+    gyro.y = map((float)raw_gy,-32768, 32757, -gyro_range, gyro_range) * M_PI / 180; // rad/s
+    gyro.z = map((float)raw_gz,-32768, 32757, -gyro_range, gyro_range) * M_PI / 180; // rad/s
 
     magnet.x = temp_mag.magnetic.x;
     magnet.y = temp_mag.magnetic.y;
@@ -67,15 +67,15 @@ void Teensy::update_sensors() {
     barom.alt = bmp.pressureToAltitude(barom.sea_lvl_press, barom.press) - barom.alt_offset;   // Param: (sea level pressure in hPa, current pressure in hPa). altitude in m.
     //barom.sea_lvl_press = bmp.seaLevelForAltitude(barom.alt, barom.press); // Param: (current altitude (m), curent pressure (hPa)). Pressure at sea level in hPa.
 
-    time_stamp = millis()
+    time_stamp = millis();
 }
 
 void Teensy::print() {
     /* Display the results (acceleration is measured in m/s^2) */
     Serial.print("(Accel) \tX: " + String(accel.x));
     Serial.print(" \tY: " + String(accel.y));
-    Serial.print(" \tZ: " + String(accel.z) + " m/s^2 ");
-    Serial.println(" \tSqrt: " + String(accel.sqrt) + " m/s^2 ");
+    Serial.print(" \tZ: " + String(accel.z) + " m/s^2  ");
+    Serial.println(" \tSqrt: " + String(accel.sqrt) + " m/s^2");
 
     /* Display the results (rotation is measured in rad/s) */
     Serial.print("(Gyro)  \tX: " + String(gyro.x));
@@ -201,10 +201,10 @@ void Teensy::get_offsets(){
 void Teensy::calibrate(){
 
     get_offsets();
-    mpu.CalibrateAccel(10);
-    mpu.CalibrateGyro(10);
+    mpu.CalibrateAccel(10); // calculates the optimal offsets for the acceleration. so that x,y,z are (0g, 0g, 1g).
+    mpu.CalibrateGyro(10);  // Calculates the optimal offsets for the gyroscopes, so that x,y,z are (0 rad/s, 0 rad/s, 0 rad/s).
 
-    int16_t *offsets = mpu.GetActiveOffsets();
+    int16_t *offsets = mpu.GetActiveOffsets(); // Getting these optimal offsets we just calculated.
     set_accel_offsets(offsets[0], offsets[1], offsets[2]);
     set_gyro_offsets(offsets[3], offsets[4], offsets[5]);
 

@@ -23,7 +23,7 @@ class Teensy{
         int16_t raw_gx, raw_gy, raw_gz;
 
         bool data_sent = false;
-        unsigned long time_stamp = 0;
+        float time_stamp = 0;
 
 	public:
         String command = "";

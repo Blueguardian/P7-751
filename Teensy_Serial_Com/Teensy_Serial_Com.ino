@@ -17,6 +17,7 @@ void setup() {
 
 
 void loop() {
+
     teensy.await_for_connection(); // Checking if anyone is connected.
 	
     teensy.update_sensors();
