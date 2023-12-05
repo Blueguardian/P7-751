@@ -11,11 +11,12 @@ sys.path.insert(1,'/home/g751/Desktop/Project/P7-751/Communication/')
 
 from SerialCom_pi import TeensyCom
 from tcp_server import TCPServer
+from Python_serial_com import Teensy_comm
 
 # Global variables declaration
 query_pic = 0
 query_img = 0
-image_center = [int(1080/2),int(1920/2)]
+image_center = [int(2464/2),int(3280/2)]
 
 script_dir = os.path.dirname(__file__)
 rel_path = "Image"
@@ -75,22 +76,24 @@ def takePic(picam2, camera_config):
     global query_pic
     print("Taking picture...")
 
-    time.sleep(0.2)
+    #time.sleep(0.2)
     #image = picam2.capture_image("main")
     #reg_image = np.array(image)
 
     #print(reg_image.shape)
     
-    if query_pic == 0:
-        print("query pic = 0")
-        picam2.switch_mode_and_capture_file(camera_config,"camera/src/Image/Referenceimage.jpg")
-        query_pic += 1
-        print("Took reference picture...")
-    if query_pic == 1:
-        print("query pic = 1")
-        picam2.switch_mode_and_capture_file(camera_config,"camera/src/Image/Queryimage.jpg")
-        print("Took query picture...")
+    # if query_pic == 0:
+    #     print("query pic = 0")
+    #     picam2.switch_mode_and_capture_file(camera_config,"camera/src/Image/Referenceimage.jpg")
+    #     query_pic += 1
+    #     print("Took reference picture...")
+    #if query_pic == 1:
+    print("query pic = 1")
+    query = picam2.capture_array('main')
+    query = cv2.resize(query,[1080,1920])
+    print("Took query picture...")
     print("Done taking picture!")
+    return query
 
 # def phantomMarker(red,blue,green,yellow):
 #
@@ -238,28 +241,28 @@ def image_acq_proc(lock, queue):
     rel_path = "Image"
     abs_file_path = os.path.join(script_dir, rel_path)
     picam2 = Picamera2()
-    camera_config = picam2.create_still_configuration(main={"format": 'BGR888', "size": (1920, 1080)})
+    camera_config = picam2.create_still_configuration(main={"format": 'BGR888', "size": (3280, 2464)})
     picam2.configure(camera_config)
     picam2.start()
     while True:
         start = time.time()
-        takePic(picam2, camera_config)
+        im_query = takePic(picam2, camera_config)
         #time.sleep(2)
-        im_reference = np.array(Image.open(str(abs_file_path)+"/Referenceimage.jpg"))
-        im_query = np.array(Image.open(str(abs_file_path)+"/Queryimage.jpg"))
+        #im_reference = np.array(Image.open(str(abs_file_path)+"/Referenceimage.jpg"))
+        #im_query = np.array(Image.open(str(abs_file_path)+"/Queryimage.jpg"))
         end = time.time()
         print(end-start)
         #cv2.imshow("im_query",im_reference)
-        if query_img == 0:
-            center_point_reference, center_coords_ref = imageProc(im_reference)
-            query_img += 1
-            #time.sleep(1)
-        if query_img == 1:
-            #time.sleep(1)
-            start_image_proc = time.time()
-            center_point_query, center_coords_query = imageProc(im_query)
-            end_image_proc = time.time()
-            print("image proc:",end_image_proc - start_image_proc)
+        # if query_img == 0:
+        #     center_point_reference, center_coords_ref = imageProc(im_reference)
+        #     query_img += 1
+        #     #time.sleep(1)
+        #if query_img == 1:
+        #time.sleep(1)
+        start_image_proc = time.time()
+        center_point_query, center_coords_query = imageProc(im_query)
+        end_image_proc = time.time()
+        print("image proc:",end_image_proc - start_image_proc)
 
         # calculateRotationTranslation(center_coords_ref,center_coords_query)
         
@@ -268,7 +271,7 @@ def image_acq_proc(lock, queue):
         lock.release()
         # cv2.imshow("query", im_query)
         # cv2.waitKey(0)
-        calculateDifference(center_point_reference,center_point_query)
+        #calculateDifference(center_point_reference,center_point_query)
 
 def comm(lock, queue):
     print("Im in comm function")
@@ -276,10 +279,12 @@ def comm(lock, queue):
     server = TCPServer(host='192.168.0.101')
     dummy_data = np.array([3,3,3])
     image_data = None
+    teensy = Teensy_comm(port="COM3")
     print("Set up dummy data")
     while True:
         print("Im in infinite loop now")
-        server.sendData(dummy_data) # Receive data
+        data=teensy.receive_send(command)
+        server.sendData(data) # Receive data
         print("recieved data")
         time.sleep(1)
         if lock.acquire(block=False):
