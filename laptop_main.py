@@ -25,7 +25,7 @@ def EKF_func(vision_pipe, com_pipe):
                 sensor_data_acc_gyro[:7] = data[:7]
                 sensor_data_magnetometer = data[7:10]
                 sensor_data_barometer = data[14]
-                delta_time = data[17] - delta_time
+                delta_time = (data[17]/1000) - delta_time
                 sensor_data_acc_gyro[-1] = delta_time
             ekf_state = ekf.measurement_step_magnetometer(sensor_data_magnetometer)
             ekf_state = ekf.measurement_step_barometer(sensor_data_barometer)
