@@ -6,7 +6,7 @@ class Drone_GUI:
               [GUI.Text('Drone pose:', font=('Helvetica', 12, 'bold')), GUI.Graph(canvas_size=(50, 50),
                                                       graph_bottom_left=(-50, -50),
                                                       graph_top_right=(50, 50),
-                                                      pad=(0, 0), key='online'), GUI.Multiline('x_pos:\t0\t\tx_vel:\t0\t\troll:\t0\ny_pos:\t0\t\ty_vel:\t0\t\tpitch:\t0\nz_pos:\t0\t\tz_vel:\t0\t\tyaw:\t0', size=(70, 4), no_scrollbar=True, focus=False, key='data')],
+                                                      pad=(0, 0), key='online'), GUI.Multiline('x_pos:\t0\t\tx_vel:\t0\t\troll:\t0\ny_pos:\t0\t\ty_vel:\t0\t\tpitch:\t0\nz_pos:\t0\t\tz_vel:\t0\t\tyaw:\t0', size=(70, 4), no_scrollbar=True, focus=False, do_not_clear=False, key='data')],
               [GUI.Text('Desired altitude:'), GUI.InputText(size=(10, 1)), GUI.Button("Submit", size=(5, 1))],
                [GUI.Button("Execute", size=(10, 2)), GUI.Button("Abort", size=(10, 2))]
               ]
