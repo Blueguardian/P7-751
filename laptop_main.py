@@ -104,7 +104,7 @@ def Com(vision_pipe, ekf_pipe):
                 vision_pipe.send(('pose', pose.get_transform()))
                 vision_pipe.send(('ang_vel', pose.get_ang_vel()))
             elif origin == 'IMU':
-                pose.interpret_sensor_output(data)
+                pose.update_values_data(data)
                 vision_pipe.send((origin, pose.get_transform()))
                 ekf_pipe.send((origin, pose.get_transform()))
         if ekf_pipe.poll():
@@ -115,6 +115,7 @@ def Com(vision_pipe, ekf_pipe):
                 GUI.update_text('data', f"x_pos:\t{data_ekf[0]:.6f}\t\tx_vel:\t{data_ekf[3]:.6f}\t\troll:\t{data_ekf[6]:.6f}\n"
                                         f"y_pos:\t{data_ekf[1]:.6f}\t\ty_vel:\t{data_ekf[4]:.6f}\t\tpitch:\t{data_ekf[7]:.6f}\n"
                                         f"z_pos:\t{data_ekf[2]:.6f}\t\tz_vel:\t{data_ekf[5]:.6f}\t\tyaw:\t{data_ekf[8]:.6f}")
+                pose.update_values_EKF(data_ekf)
             client.sendData(data_ekf, 'EKF')
 
 
