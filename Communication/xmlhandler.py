@@ -170,7 +170,7 @@ class XMLhandler():
     @classmethod
     def __det_type(cls, data):
         """
-        Classmethod for determining type of data and output it in relavant format for xml processing
+        Classmethod for determining type of data and output it in relevant format for xml processing
         :param data: data to be processed
         :return: type of data or element type of list, tuple or numpy array
         """
@@ -201,6 +201,7 @@ class XMLhandler():
         """
         Instance method for processing data into xml format, utilises classmethods for processing
         :param data: Data to be processed
+        :param origin: Origin of data
         :return: Data in xml bytestring format
         """
         __type = self.__det_type(data)
@@ -338,7 +339,7 @@ class XMLhandler():
     def parse_xml(self, data):
         """
         Instance method, used in determining what type of data was received and how to process it to obtain
-        relavant information. Parses the information in regard to the obtained information and returns the data in
+        relevant information. Parses the information in regard to the obtained information and returns the data in
         numpy array format.
         :param data: Data to be parsed
         :return: numpy array format of data
