@@ -94,8 +94,18 @@ class TCPServer:
         """
         try:
             data = self.connection.recv(self.__LEN_SIZE)
-        except socket.error:
-            return "SOCKET_TIMEOUT error"
+        except socket.error as e:
+            if e.errno == errno.ECONNRESET:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNABORTED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNREFUSED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            else:
+                return "SOCKET_TIMEOUT error"
         else:
             if not data:
                 return "Invalid data"
@@ -114,8 +124,18 @@ class TCPServer:
             if isinstance(length, str):
                 return "LENGTH_INVALID error"
             data = self.connection.recv(length)
-        except socket.error:
-            return "SOCKET_TIMEOUT error"
+        except socket.error as e:
+            if e.errno == errno.ECONNRESET:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNABORTED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNREFUSED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            else:
+                return "SOCKET_TIMEOUT error"
         else:
             if str(data.decode(self.__FORMAT)) == "" or str(data.decode(self.__FORMAT)) == '':
                 return "DATA_INVALID error"
@@ -139,8 +159,18 @@ class TCPServer:
             if not isinstance(out_data, bytes):
                 out_data = out_data.encode(self.__FORMAT)
             self.connection.sendall(out_data)
-        except socket.error:
-            return "SOCKET_TIMEOUT error"
+        except socket.error as e:
+            if e.errno == errno.ECONNRESET:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNABORTED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNREFUSED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            else:
+                return "SOCKET_TIMEOUT error"
         else:
             return None
 
@@ -153,8 +183,18 @@ class TCPServer:
         try:
             out_data = msg.encode(self.__FORMAT)
             self.connection.send(out_data)
-        except socket.error:
-            return "SOCKET_TIMEOUT error"
+        except socket.error as e:
+            if e.errno == errno.ECONNRESET:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNABORTED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNREFUSED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            else:
+                return "SOCKET_TIMEOUT error"
         else:
             return None
 
