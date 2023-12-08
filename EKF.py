@@ -7,6 +7,24 @@ class EKF():
     def __init__(self):
         self.updateNumber = 0
 
+    def measurement_step_barometer(self, sensor_measurements):
+        return None
+
+    def measurement_step_magnetometer(self, sensor_measurements):
+        return None
+
+    def measurement_step_vision(self, sensor_measurements):
+        return None
+
+    def prediction_step(self,sensor_measurements):
+        return None
+
+
+
+    def initialise_ekf(self):
+        return None
+
+
     def ekf(self, sensed_state, sensor_measurements, dt):
 
         X = sensed_state.reshape(-1, 1)  # Column of current state X = [x,y,z,vx,vy,vz,r,p,w].T

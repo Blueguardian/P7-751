@@ -6,25 +6,37 @@ import multiprocessing, time
 import numpy as np
 from scipy.spatial.transform import Rotation
 def EKF_func(vision_pipe, com_pipe):
+
     ekf = EKF()
-    sensor_data = np.zeros((16, 1))
-    state_data = np.zeros((9, 1))
+    sensor_data_acc_gyro = np.zeros((7, 1))
+    sensor_data_magnetometer = np.zeros((3, 1))
+    sensor_data_barometer = 0
+    vision_data = np.zeros((6, 1))
     delta_time = 0
+    ekf.initialise_ekf()
+
+    ekf_state = None
+
     while True:
         if com_pipe.poll():
             while com_pipe.poll():
                 data = com_pipe.recv()
-                if data[0] == 'IMU':
-                    sensor_data[:10] = data[:10]
-                    sensor_data[11] = data[14]
-                    delta_time = data[17] - delta_time
-                if data[0] == 'state':
-                    state_data = data[1]
+                data = np.reshape(data, (-1, 1))
+                sensor_data_acc_gyro[:7] = data[:7]
+                sensor_data_magnetometer = data[7:10]
+                sensor_data_barometer = data[14]
+                delta_time = data[17] - delta_time
+                sensor_data_acc_gyro[-1] = delta_time
+            ekf_state = ekf.measurement_step_magnetometer(sensor_data_magnetometer)
+            ekf_state = ekf.measurement_step_barometer(sensor_data_barometer)
+            com_pipe.send(ekf_state)
         if vision_pipe.pol():
             while vision_pipe.poll():
                 data = com_pipe.recv()
-                sensor_data[12:] = data[1]
-        ekf.ekf(state_data, sensor_data, delta_time)
+                vision_data[:] = data[:]
+            ekf_state = ekf.vision_step(vision_data)
+            com_pipe.send(ekf_state)
+        ekf.prediction_step(sensor_data_acc_gyro)
 
 def Vision(com_pipe, ekf_pipe):
     vision = VisionAlgorithm()
@@ -47,14 +59,17 @@ def Vision(com_pipe, ekf_pipe):
                 if data[0] == 'ang_vel':
                     last_origin = data[0]
                     omega = data[1]
+            if not points_image is None and not Transform is None and not omega is None:
+                T = Transform[:, 4]
+                R = Transform[:, :4]
+                translation, rotation_m = vision.minimize(points_image.T, R, T, omega)
 
-            T = Transform[:, 4]
-            R = Transform[:, :4]
-            translation, rotation_m = vision.minimize(points_image.T, R, T, omega)
-
-            rot_vec = Rotation.from_matrix(rotation_m)
-            pose_vec = np.vstack((translation, rot_vec))
-            ekf_pipe.send(pose_vec)
+                rot_vec = Rotation.from_matrix(rotation_m)
+                rot_vec = rot_vec.as_rotvec()
+                pose_vec = np.vstack((translation, rot_vec))
+                ekf_pipe.send(pose_vec)
+            else:
+                continue
         else:
             continue
 

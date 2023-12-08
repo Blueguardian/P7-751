@@ -42,5 +42,5 @@ class VisionAlgorithm:
         pixel_pose = np.reshape(pixel_pose, (2, 4)).T
         init_params = np.array([T[0], T[1], T[2], omega[0], omega[1], omega[2]])
         result = least_squares(self._reprojection_func, init_params, args=(pixel_pose, R), method='lm')
-        return result[:3], result[3:]
+        return result[:3], np.cross(result[3:], np.eye(3))*R
 
