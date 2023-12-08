@@ -9,7 +9,6 @@ import sys
 
 sys.path.insert(1,'/home/g751/Desktop/Project/P7-751/Communication/')
 
-from SerialCom_pi import TeensyCom
 from tcp_server import TCPServer
 from Python_serial_com import Teensy_comm
 

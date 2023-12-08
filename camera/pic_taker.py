@@ -6,7 +6,7 @@ import numpy as np
 import os
 
 script_dir = os.path.dirname(__file__)
-rel_path = "Images"
+rel_path = "src/Images"
 abs_file_path = os.path.join(script_dir, rel_path)
 
 i = 0
