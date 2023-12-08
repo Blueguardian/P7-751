@@ -22,13 +22,13 @@ script_dir = os.path.dirname(__file__)
 rel_path = "Image"
 abs_file_path = os.path.join(script_dir, rel_path)
 
-lower_red = np.array([0,100,100])
+lower_red = np.array([0,150,150])
 upper_red = np.array([10,255,255])
-lower_red_end = np.array([170,100,100])
+lower_red_end = np.array([170,150,150])
 upper_red_end = np.array([179,255,255])
 
 lower_blue = np.array([105,100,100])
-upper_blue = np.array([140,255,255])
+upper_blue = np.array([130,255,255])
 
 lower_green = np.array([40,50,50])
 upper_green = np.array([80,255,255])
@@ -104,6 +104,8 @@ def takePic(picam2, camera_config):
 
 def imageProc(image):
 
+    dummy_return = 0
+
     global lower_red     
     global upper_red 
     global lower_red_end 
@@ -163,6 +165,26 @@ def imageProc(image):
     mask_green_filtered = np.transpose(np.nonzero(masked_green_median_opening[:,:,0] > 0)) 
     mask_yellow_filtered = np.transpose(np.nonzero(masked_yellow_median_opening[:,:,0] > 0)) 
 
+
+    if mask_red_filtered.size == 0:
+        
+        print("Mask red was 0, exiting function...")
+        return dummy_return
+    if mask_blue_filtered.size == 0:
+        
+        print("Mask blue was 0, exiting function...")
+        return dummy_return
+    if mask_green_filtered.size == 0:
+        
+        print("Mask green was 0, exiting function...")
+        return dummy_return
+    if mask_yellow_filtered.size == 0:
+        
+        print("Mask yellow was 0, exiting function...")
+        return dummy_return
+
+
+
 #    print("red:", mask_red_filtered.shape)
     #print("blue:", mask_blue_filtered.shape)
     #print("green:", mask_green_filtered.shape)
@@ -193,13 +215,13 @@ def imageProc(image):
     yellow_center = [int((yellow_x_max - yellow_x_min)/2 + yellow_x_min), int((yellow_y_max - yellow_y_min)/2 + yellow_y_min)]
 
     # Calculate the center of the 4 colored markers
-    center_point = [int((red_center[1] + blue_center[1] + green_center[1] + yellow_center[1])/4), int((red_center[0] + blue_center[0] + green_center[0] + yellow_center[0])/4)]
+    #center_point = [int((red_center[1] + blue_center[1] + green_center[1] + yellow_center[1])/4), int((red_center[0] + blue_center[0] + green_center[0] + yellow_center[0])/4)]
 
-    center_coords = [red_center[0],red_center[1],blue_center[0],blue_center[1],green_center[0],green_center[1],yellow_center[0],yellow_center[1]]
+    center_coords = np.array([red_center[0],red_center[1],blue_center[0],blue_center[1],green_center[0],green_center[1],yellow_center[0],yellow_center[1]])
 
     print("Calculated center point and finished magic!")
     
-    return center_point, center_coords
+    return center_coords
 
 
 def calculateDifference(center_point_reference,center_point_query):
@@ -244,6 +266,7 @@ def image_acq_proc(lock, queue):
     camera_config = picam2.create_still_configuration(main={"format": 'BGR888', "size": (3280, 2464)})
     picam2.configure(camera_config)
     picam2.start()
+    center_coords_query = np.zeros((1, 8))
     while True:
         start = time.time()
         im_query = takePic(picam2, camera_config)
@@ -260,14 +283,31 @@ def image_acq_proc(lock, queue):
         #if query_img == 1:
         #time.sleep(1)
         start_image_proc = time.time()
-        center_point_query, center_coords_query = imageProc(im_query)
+        center_coords_query_value = imageProc(im_query)
+        #print(center_coords_query_value)
+        #print(center_coords_query.size)
+
+        #print(center_coords_query)
+
+        if isinstance(center_coords_query_value, int):
+            image_data = center_coords_query
+            lock.acquire()
+            queue.put(image_data)
+            lock.release()
+            print(image_data)
+            continue
+        
+
+        center_coords_query = center_coords_query_value
+
+        print(center_coords_query)
         end_image_proc = time.time()
         print("image proc:",end_image_proc - start_image_proc)
 
         # calculateRotationTranslation(center_coords_ref,center_coords_query)
-        
+        image_data = center_coords_query[0]
         lock.acquire()
-        queue.put(center_coords_query)
+        queue.put(image_data)
         lock.release()
         # cv2.imshow("query", im_query)
         # cv2.waitKey(0)
@@ -279,14 +319,19 @@ def comm(lock, queue):
     server = TCPServer(host='192.168.0.101')
     dummy_data = np.array([3,3,3])
     image_data = None
-    teensy = Teensy_comm(port="COM3")
+    teensy = Teensy_comm("/dev/ttyACM0")
     print("Set up dummy data")
     while True:
+        start_send = time.time()
         print("Im in infinite loop now")
-        data=teensy.receive_send(command)
+        data=teensy.receive_send("command")
+        if data is not None:
+            print(data)
+        else:
+            continue
         server.sendData(data) # Receive data
         print("recieved data")
-        time.sleep(1)
+        time.sleep(0.25)
         if lock.acquire(block=False):
             print("lock acquired")
             if not queue.empty():
@@ -302,6 +347,8 @@ def comm(lock, queue):
         else:
             lock.release()
             continue
+        end_send = time.time()
+        print("send speed:",end_send-start_send)
         print("something went wrong, consult IT")
         
 
