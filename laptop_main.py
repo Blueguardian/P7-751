@@ -8,6 +8,7 @@ from scipy.spatial.transform import Rotation
 def EKF_func(vision_pipe, com_pipe):
     ekf = EKF()
     sensor_data = np.zeros((16, 1))
+    sensor_data = sensor_data*None
     state_data = None
     delta_time = 0
     while True:
