@@ -1,13 +1,13 @@
 # Designed by group 7-751, Aalborg University, 2023.
 # For purpose of project, concerning tethered drone control.
 # All rights reserved, can be copied under license.
-
+import errno
 import socket, math
 import numpy as np
-from xmlhandler import XMLhandler
+from xml_handler import XMLhandler
 from time import sleep
 
-class tcp_client_test:
+class tcp_client:
     """
     TCP client class for handling serverside message retrieval and sending of xml and message data, along with parsing
     of received xml data.
@@ -59,15 +59,19 @@ class tcp_client_test:
         """
         self.__serverSocket.close()
 
-    def __receive_length(cls):
+    def __receive_length(self):
         """
         Object method __receive_length used to obtain the length of the incoming data
         :return: int: length of incoming message or data
         """
-        data = cls.__serverSocket.recv(cls.__LEN_SIZE)
-        data = data.decode(cls.__FORMAT)
-        length = eval(data.split('-')[1].lstrip("0"))
-        return length
+        data = self.__serverSocket.recv(self.__LEN_SIZE)
+        data = data.decode(self.__FORMAT)
+        try:
+            length = eval(data.split('-')[1].lstrip("0"))
+        except Exception as e:
+            return "Faulty length"
+        else:
+            return length
 
     def receiveMsg(self):
         """
@@ -76,8 +80,17 @@ class tcp_client_test:
         """
         try:
             data = self.__serverSocket.recv(self.__SIZE)
-        except socket.error:
-            return "SOCKET_TIMEOUT error"
+        except socket.error as e:
+            if e.errno == errno.ECONNRESET:
+                self.__init__(self.__HOST, self.__PORT+1, self.__SIZE, self.__FORMAT, socket.AF_INET, socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNABORTED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNREFUSED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            else:
+                return "SOCKET_TIMEOUT error"
         else:
             if not data:
                 return "Invalid data"
@@ -94,9 +107,21 @@ class tcp_client_test:
         """
         try:
             length = self.__receive_length()
+            if isinstance(length, str):
+                return "LENGTH_INVALID error"
             data = self.__serverSocket.recv(length)
-        except socket.error:
-            return "SOCKET_TIMEOUT error"
+        except socket.error as e:
+            if e.errno == errno.ECONNRESET:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNABORTED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNREFUSED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            else:
+                return "SOCKET_TIMEOUT error"
         else:
             if str(data.decode(self.__FORMAT)) == "" or str(data.decode(self.__FORMAT)) == '':
                 return "DATA_INVALID error"
@@ -120,8 +145,18 @@ class tcp_client_test:
             if not isinstance(out_data, bytes):
                 out_data = out_data.encode(self.__FORMAT)
             checkout = self.__serverSocket.send(out_data)
-        except socket.error:
-            return "SOCKET_TIMEOUT error"
+        except socket.error as e:
+            if e.errno == errno.ECONNRESET:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNABORTED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNREFUSED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            else:
+                return "SOCKET_TIMEOUT error"
         else:
             return checkout
 
@@ -135,27 +170,35 @@ class tcp_client_test:
         try:
             msg = msg.encode(self.__FORMAT)
             self.__serverSocket.send(msg)
-        except socket.error:
-            return "SOCKET_TIMEOUT error"
+        except socket.error as e:
+            if e.errno == errno.ECONNRESET:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNABORTED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNREFUSED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            else:
+                return "SOCKET_TIMEOUT error"
         else:
             return None
 
 """Test setup for the classes"""
 """Receives 'ack' before continuing to ensure a fully established connection"""
 """Sends different types of data to the server for processing"""
-
+# Real ip host='192.168.0.101'
 # Instantiate client object
-client = tcp_client_test(host='192.168.0.101')
-
-# Still not tested for other types than ndarray
-
-# "Main function" only used due to class definition above
-# if __name__ == "__main__":
-#     ack = None # Initialise ack variable
-#     while ack != 'ack':
-#         client.sendMsg('ack') # Reassign until ack == 'ack'
-#         ack = client.receiveMsg() # Send 'ack' to server
+# client = tcp_client_test()
 #
+# # Still not tested for other types than ndarray
+#
+# # "Main function" only used due to class definition above
+# if __name__ == "__main__":
+#
+#     origin = None
+#     rcv_data = None
 #     # Define different data type for testing the setup
 #     data_fun1 = np.zeros((5, 5))
 #     data_fun2 = np.zeros((5, 5, 2))
@@ -165,33 +208,44 @@ client = tcp_client_test(host='192.168.0.101')
 #     data_fun5[0, 0] = math.cos(5)
 #     data_fun5[0, 1] = -math.sin(5)
 #     data_fun5[0, 3] = 411.0
-#     data_fun5[1, ] = math.sin(5)*math.cos(50)
-#     data_fun5[1, 1] = math.cos(5)*math.cos(50)
+#     data_fun5[1,] = math.sin(5) * math.cos(50)
+#     data_fun5[1, 1] = math.cos(5) * math.cos(50)
 #     data_fun5[1, 2] = -math.sin(50)
-#     data_fun5[1, 3] = math.cos(50)*112.0
-#     data_fun5[2, 0] = math.sin(5)*math.sin(50)
-#     data_fun5[2, 1] = math.cos(5)*math.sin(50)
+#     data_fun5[1, 3] = math.cos(50) * 112.0
+#     data_fun5[2, 0] = math.sin(5) * math.sin(50)
+#     data_fun5[2, 1] = math.cos(5) * math.sin(50)
 #     data_fun5[2, 2] = math.cos(50)
-#     data_fun5[2, 3] = math.cos(50)*112.0
+#     data_fun5[2, 3] = math.cos(50) * 112.0
 #     data_fun5[3, 3] = 1.0
-#     i = 0 # Iterator
-#     sleep(2) # Wait 2 seconds before sending all the data
-#     while True:
+#     i = 0  # Iterator
+#     while i < 5:
 #         if i < 1:
-#             check = client.sendData(data_fun1) # Send 2D Matrix
+#             check = client.sendData(data_fun1)  # Send 2D Matrix
 #             print(check)
 #         elif i == 1:
-#             check = client.sendData(data_fun2) # Send 3D Matrix
+#             check = client.sendData(data_fun2)  # Send 3D Matrix
 #             print(check)
 #         elif i == 2:
-#             check = client.sendData(data_fun3) # Send Vector
+#             check = client.sendData(data_fun3)  # Send Vector
 #             print(check)
 #         elif i == 3:
-#             check = client.sendData(data_fun4) # Send Value
+#             check = client.sendData(data_fun4)  # Send Value
 #             print(check)
 #         elif i > 3 and i < 5:
-#             check = client.sendData(data_fun5) # Send transformation matrix
+#             check = client.sendData(data_fun5, "final")  # Send transformation matrix
 #             print(check)
 #         i += 1
-
-
+#     while origin != "final":
+#         rcv_data = client.receiveData()
+#         if isinstance(rcv_data, tuple):
+#             origin = rcv_data[0]
+#             rcv_data = rcv_data[1]
+#             print(f"Origin: {origin}")
+#             print(rcv_data)
+#         else:
+#             continue
+#         if isinstance(rcv_data, str):  # If it is a string (An error)
+#             continue
+#         else:
+#             print(origin)
+#             print(rcv_data)  # Otherwise print the received data
