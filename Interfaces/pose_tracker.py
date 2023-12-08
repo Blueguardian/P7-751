@@ -3,7 +3,10 @@ from math import cos, sin
 from scipy.spatial.transform import Rotation
 
 class Pose_tracker:
-
+    """
+    Very rough pose tracker, coded specifically for the tasks required
+    Will not document
+    """
     def __init__(self):
 
         self._x = 0

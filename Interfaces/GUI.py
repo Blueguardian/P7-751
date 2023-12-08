@@ -1,6 +1,10 @@
 import PySimpleGUI as GUI
 
 class Drone_GUI:
+    """
+    Will not document this, you don't need to understand the underlying shitshow that it is to
+    create a GUI.
+    """
     GUI.theme('Dark Amber')
     layout = [[GUI.Text('Drone status', size=(20, 1), font=('Helvetica', 14, 'bold'))],
               [GUI.Text('Drone pose:', font=('Helvetica', 12, 'bold')), GUI.Graph(canvas_size=(50, 50),
@@ -32,10 +36,10 @@ class Drone_GUI:
         self.window.close()
 
 
-if __name__ == '__main__':
-    GUI = Drone_GUI()
-    while True:
-        events, values = GUI.getinput()
-        GUI.SetLED('online', 'red')
-        if events == 'Submit':
-            print(values[1])
+# if __name__ == '__main__':
+#     GUI = Drone_GUI()
+#     while True:
+#         events, values = GUI.getinput()
+#         GUI.SetLED('online', 'red')
+#         if events == 'Submit':
+#             print(values[1])
