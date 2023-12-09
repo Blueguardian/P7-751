@@ -7,10 +7,8 @@ import multiprocessing
 from multiprocessing import SimpleQueue, Lock
 import sys
 
-sys.path.insert(1,'/home/g751/Desktop/Project/P7-751/Communication/')
-
-from tcp_server import TCPServer
-from Python_serial_com import Teensy_comm
+from Communication.tcp_server import TCPServer
+from Communication.Python_serial_com import Teensy_comm
 
 # Global variables declaration
 query_pic = 0
