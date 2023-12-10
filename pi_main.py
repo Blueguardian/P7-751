@@ -7,6 +7,7 @@ import multiprocessing
 from multiprocessing import SimpleQueue, Lock
 import sys
 
+from Communication.xmlhandler import XMLhandler
 from Communication.tcp_server import TCPServer
 from Communication.Python_serial_com import Teensy_comm
 
@@ -313,52 +314,37 @@ def image_acq_proc(lock, queue):
 def comm(lock, queue):
     print("Im in comm function")
     #Instantiate server object instance
-    server = TCPServer(host='192.168.0.101')
-    dummy_data = np.array([3,3,3])
+    server = TCPServer(host='192.168.0.102')
     image_data = None
     teensy = Teensy_comm("/dev/ttyACM0")
-    print("Set up dummy data")
+    xml = XMLhandler()
     while True:
-        start_send = time.time()
-        print("Im in infinite loop now")
         data=teensy.receive_send("command")
-        if data is not None:
-            print(data)
-        else:
-            continue
-        server.sendData(data) # Receive data
-        print("recieved data")
-        time.sleep(0.25)
+        if not isinstance(data, str):
+            server.sendData(data)  # Receive data
+            time.sleep(0.25)
+        data_ekf = server.receiveData()
+        if data_ekf is not None:
+            data = teensy.receive_send(xml.process_xml(data_ekf).decode())
         if lock.acquire(block=False):
-            print("lock acquired")
             if not queue.empty():
-                print("que not empty :)")
                 image_data = np.array([queue.get()])
                 lock.release()
                 if isinstance(image_data, str): # If it is a string (An error)
-                    print("Continuing...")
                     continue
                 else:
-                    print("Sending data")
                     server.sendData(image_data)
         else:
             lock.release()
             continue
-        end_send = time.time()
-        print("send speed:",end_send-start_send)
-        print("something went wrong, consult IT")
-        
+
 
 if __name__ == '__main__':
     Manager = multiprocessing.Manager()
-    print("setting up lock")
     mutex = Lock()
-    print("setting up que")
     queue = SimpleQueue()
-    print("setting up multiprocess p2")
     p2 = multiprocessing.Process(target=comm, args=(mutex, queue))
     p2.start()
-    print("setting up multiproces p1")
     p1 = multiprocessing.Process(target=image_acq_proc, args=(mutex, queue))
     p1.start()
     p1.join()
