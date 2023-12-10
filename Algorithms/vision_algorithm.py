@@ -14,7 +14,7 @@ class VisionAlgorithm:
         self.intrinsic_matrix = np.array([[2770.28, 0, 1602.71], [0, 2765.57, 1200.56], [0,0,1.0]])
 
         # Projection matrix
-        self.proj_mat = np.array([[self.f, 0, 0], [0, self.f, 0], [0, 0, 1]])
+        self.proj_mat = np.array([[(self.f * 3.68)/1920, 0, 0], [0, (self.f*2.76)/1080, 0], [0, 0, 1]])
 
         # Pixels limits for Raspberry Pi V2.1 IMX219 sensor, taken from https://www.raspberrypi.com/documentation/accessories/camera.html
         self.u_lim = [0, 3280]
@@ -26,15 +26,17 @@ class VisionAlgorithm:
 
         T = params[:3].T
         dR = expm(np.cross(np.eye(3), np.array(params[3:].T)))*init_rot
-        proj_points = self._project_points(self.points, T, dR)
-        reprojection_error = np.linalg.norm(points.T - proj_points)
+        reprojection_error = 0
+        for point in range(0, 1, points.shape[0]):
+            proj_points = self._project_points(points[point], T, dR)
+            reprojection_error += np.linalg.norm(points.T - proj_points)
         return reprojection_error
 
-    def _project_points(self, T, R):
+    def _project_points(self, point, T, R):
         Transform = np.hstack((R, T.reshape(-1, 1)))
-        proj_matrix = np.dot(self.intrinsic_matrix, Transform[:3, :])
-        homo_coords = np.dot(proj_matrix, np.vstack((self.points.T, np.ones((1, self.points.shape[1])))))
-        pixel_pose = (homo_coords[:2, :] / homo_coords[2, :]) * self.intrinsic_matrix
+        proj_matrix = np.dot(self.proj_mat, Transform[:3, :])
+        homo_coords = np.dot(proj_matrix, np.vstack((point.T, np.ones((1, point.shape[1])))))
+        pixel_pose = (homo_coords[:2, :] / homo_coords[2, :]) * self.proj_mat
         return pixel_pose.T
 
 
