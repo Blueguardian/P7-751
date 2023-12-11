@@ -12,6 +12,7 @@ from Algorithms.vision_algorithm import VisionAlgorithm
 from Algorithms.EKF import EKF
 from Communication.tcp_client import tcp_client
 
+np.set_printoptions(suppress=True)
 
 def EKF_func(vision_pipe, com_pipe):
     """
@@ -37,9 +38,12 @@ def EKF_func(vision_pipe, com_pipe):
 
     # Initialise time variable
     delta_time = 0
+    prev_time = 0
 
     # Initialise EKF
     ekf.initialise_ekf()
+
+    ekf_state = None
 
     # Infinite while loop for continuous process execution
     while True:
@@ -49,43 +53,51 @@ def EKF_func(vision_pipe, com_pipe):
             while com_pipe.poll():
                 # Retrieve the data from the pipeline and reshape it to a column vector
                 data = com_pipe.recv()
-                data = np.reshape(data, (-1, 1))
 
-                # Assign the data associated with related updates to their respective variables
-                sensor_data_acc_gyro[:7] = data[:7] # Accelerometer and Gyroscope
-                sensor_data_magnetometer = data[7:10] # Magnetometer
-                sensor_data_barometer = data[14] # Barometer
+            if data is not None:
+                data = data[1]
 
-                # Update the timestep and add it to the prediction update data
-                delta_time = (data[17]/1000) - delta_time
-                sensor_data_acc_gyro[-1] = delta_time
+                    
 
-            # Perform perception updates with magnetometer and barometer data
-            ekf.measurement_step_magnetometer(sensor_data_magnetometer)
-            ekf_state = ekf.measurement_step_barometer(sensor_data_barometer)
+                sensor_data_acc_gyro1 = data[0][:]
+                sensor_data_acc_gyro2 = data[1][:]
+                sensor_data_acc_gyro = np.append(sensor_data_acc_gyro1, sensor_data_acc_gyro2).copy().reshape(-1,1)
+                sensor_data_magnetometer = data[2][:3]
+                sensor_data_barometer1 = data[2][3]
+                sensor_data_barometer2 = data[2][4]
+                sensor_data_barometer = np.append(sensor_data_barometer1, sensor_data_barometer2).copy().reshape(-1,1)
+                current_t = (data[2][-1]/1000)
 
-            # Send the updated state to the control system through the communication process
-            com_pipe.send(ekf_state)
+                if prev_time == 0:
+                    prev_time = current_t
+
+                delta_time = current_t - prev_time
+                prev_time = current_t
+        
+                # Perform the prediction update with the available data
+                ekf_state = ekf.prediction_step_2_imus(sensor_data_acc_gyro, delta_time)
+
+                # Perform perception updates with magnetometer and barometer data
+                #ekf_state = ekf.measurement_step_magnetometer(sensor_data_magnetometer)
+                ekf_state = ekf.measurement_step_barometer_2_imus(sensor_data_barometer)
+
 
         # If the pipeline to the vision algorithm contains readable data
-        if vision_pipe.pol():
+        if vision_pipe.poll():
             # While loop ensuring that the most recent data is used for the update
             while vision_pipe.poll():
                 # Retrieve the data from the pipeline and assign it to the variable
-                data = com_pipe.recv()
-                vision_data[:] = data[:]
+                data = vision_pipe.recv()
 
             # Perform the perception update with the new vision data
-            ekf_state = ekf.vision_step(vision_data)
+            #ekf_state = ekf.measurement_step_vision(vision_data)
 
+
+        if ekf_state is not None:
             # Send the result to the control system through the communication process
+            print(np.round(ekf_state,3).reshape(1,-1)[0])
+
             com_pipe.send(ekf_state)
-
-        # Perform the prediction update with the available data
-        ekf_state = ekf.prediction_step(sensor_data_acc_gyro)
-
-        # Send the result to the control system through the communication process
-        com_pipe.send(ekf_state)
 
 def Vision(com_pipe, ekf_pipe):
     """
@@ -133,8 +145,8 @@ def Vision(com_pipe, ekf_pipe):
             if not points_image is None and not Transform is None and not omega is None:
 
                 # Define T and R components
-                T = Transform[:, 4]
-                R = Transform[:, :4]
+                T = Transform[:, 3]
+                R = Transform[:4, :3].copy()
 
                 # Execute the minimisation of the variables
                 translation, rotation_m = vision.minimize(points_image.T, R, T, omega)
@@ -143,7 +155,6 @@ def Vision(com_pipe, ekf_pipe):
                 rot_vec = Rotation.from_matrix(rotation_m) # From rotation matrix
                 rot_vec = rot_vec.as_rotvec() # To rotation vector (Assumed to be rpy)
                 pose_vec = np.vstack((translation, rot_vec)) # Create a column vector from the results
-
                 # Send the results to the EKF
                 ekf_pipe.send(pose_vec)
             else:
@@ -162,47 +173,16 @@ def Com(vision_pipe, ekf_pipe):
     """
 
     #Instantiate client object instance
-    client = tcp_client(host='192.168.0.101') # Standard host IP, only change if you know what you are doing
-
-    # Instantiate the GUI and Pose tracker objects
-    GUI = Drone_GUI()
+    client = tcp_client(host='192.168.0.102') # Standard host IP, only change if you know what you are doing
     pose = Pose_tracker()
-
-    # Initialise GUI variables
-    execution_state = 0
-    desired_altitude = 0
-
-    # Update the GUI and retrieve relevant data and events and print the "LED"
-    events, values = GUI.getinput()
-    GUI.SetLED('online', 'red')
-
-    # Infinite while loop for continuous process execution
-    while True:
-        # Update the GUI and retrieve relevant data and events
-        events, values = GUI.getinput()
-
-        # If the 'Abort' button is pressed stop the drone system
-        # and update relevant GUI components
-        if events == 'Abort':
-            execution_state = 0
-            GUI.SetLED('online', 'red')
-
-        # Else if the 'Execute' button is pressed start the drone system
-        # and update relevant GUI components
-        elif events == 'Execute':
-            execution_state = 1
-            GUI.SetLED('online', 'green')
-
-        # Else if the user has entered a desired altitude and pressed the 'Submit' button, update the
-        # value sent to the control system
-        elif events == 'Submit':
-            desired_altitude = values[1]
 
         # Retrieve data from the server
         data = client.receiveData()
 
         # If no error occurred
         if not isinstance(data, str):
+
+            # print(data[0])
 
             # Seperate the origin and data
             origin = data[0]
@@ -221,34 +201,34 @@ def Com(vision_pipe, ekf_pipe):
             # and send the data along to the EKF and vision process
             elif origin == 'IMU':
                 pose.update_values_data(data)
-                vision_pipe.send((origin, pose.get_transform()))
                 ekf_pipe.send((origin, data))
+                vision_pipe.send((origin, pose.get_transform()))
 
         # If the pipeline to the EKF process contains readable data
         if ekf_pipe.poll():
-
+            
             # Initialise a container for the data
             data_ekf = None
 
             # While loop ensuring that the most recent data is sent
             while ekf_pipe.poll():
-
                 # Retrieve the data
                 data_ekf = ekf_pipe.recv()
 
                 # Reshape the data to include the execution state and the desired altitude
-                data_ekf = np.vstack((data_ekf, np.reshape(np.array([execution_state, desired_altitude]), (-1, 1))))
+                data_ekf = np.append([execution_state, desired_altitude], data_ekf)
 
-                # Update the GUI values
-                GUI.update_text('data', f"x_pos:\t{data_ekf[0]:.6f}\t\tx_vel:\t{data_ekf[3]:.6f}\t\troll:\t{data_ekf[6]:.6f}\n"
-                                        f"y_pos:\t{data_ekf[1]:.6f}\t\ty_vel:\t{data_ekf[4]:.6f}\t\tpitch:\t{data_ekf[7]:.6f}\n"
-                                        f"z_pos:\t{data_ekf[2]:.6f}\t\tz_vel:\t{data_ekf[5]:.6f}\t\tyaw:\t{data_ekf[8]:.6f}")
+                # # Update the GUI values
+                # GUI.update_text('data', f"x_pos:\t{data_ekf[0]:.6f}\t\tx_vel:\t{data_ekf[3]:.6f}\t\troll:\t{data_ekf[6]:.6f}\n"
+                #                         f"y_pos:\t{data_ekf[1]:.6f}\t\ty_vel:\t{data_ekf[4]:.6f}\t\tpitch:\t{data_ekf[7]:.6f}\n"
+                #                         f"z_pos:\t{data_ekf[2]:.6f}\t\tz_vel:\t{data_ekf[5]:.6f}\t\tyaw:\t{data_ekf[8]:.6f}")
 
                 # Update the pose tracker
                 pose.update_values_EKF(data_ekf)
 
             # Send the final data to the control system
-            client.sendData(data_ekf, 'EKF')
+            #print(f"Execution state: {execution_state}\n Desired altitude: {desired_altitude}")
+            status = client.sendData(data_ekf, 'EKF')
 
 
 if __name__ == '__main__':
@@ -261,10 +241,14 @@ if __name__ == '__main__':
 
     # Process initialisation, targets are the above functions handling each individual process and the args are
     # the arguments for the function
-    p_EKF = multiprocessing.Process(target=EKF_func, args=(vision_ekf_pipe, ekf_com_pipe)) # EKF process
-    p_vision = multiprocessing.Process(target=Vision, args=(com_vision_pipe, vision_ekf_pipe)) # Vision algorithm process
-    p_com = multiprocessing.Process(target=Com, args=(com_vision_pipe, ekf_com_pipe)) # Communication process
-
+    p_EKF = multiprocessing.Process(target=EKF_func,    args=(ekf_vision_pipe, ekf_com_pipe)) # EKF process
+    p_vision = multiprocessing.Process(target=Vision,   args=(vision_com_pipe, vision_ekf_pipe)) # Vision algorithm process
+    p_com = multiprocessing.Process(target=Com,         args=(com_vision_pipe, com_ekf_pipe)) # Communication process
+    
+    p_EKF.start()
+    p_vision.start()
+    p_com.start()
+    
     # For synchronisation purposes these have to be called
     # If the processes finish simultaneously, try commenting them out.
     p_EKF.join()
