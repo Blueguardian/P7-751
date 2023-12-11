@@ -239,44 +239,44 @@ im_green_array = np.array(im_green)
 
 
 # Turn image into HSV colorspace
-im_array_hsv = cv2.cvtColor(im_array, cv2.COLOR_RGB2HSV)
+#im_array_hsv = cv2.cvtColor(im_array, cv2.COLOR_RGB2HSV)
 
 
 
 # Create color boundaries in HSV spectrum 
-lower_red = np.array([0,100,100])
-upper_red = np.array([10,255,255])
-lower_red_end = np.array([170,100,100])
-upper_red_end = np.array([179,255,255])
+# lower_red = np.array([0,100,100])
+# upper_red = np.array([10,255,255])
+# lower_red_end = np.array([170,100,100])
+# upper_red_end = np.array([179,255,255])
 
-lower_blue = np.array([110,100,100])
-upper_blue = np.array([130,255,255])
+# lower_blue = np.array([110,100,100])
+# upper_blue = np.array([130,255,255])
 
-lower_green = np.array([40,50,50])
-upper_green = np.array([80,255,255])
+# lower_green = np.array([40,50,50])
+# upper_green = np.array([80,255,255])
 
-lower_yellow = np.array([20,100,100])
-upper_yellow = np.array([35,255,255])
+# lower_yellow = np.array([20,100,100])
+# upper_yellow = np.array([35,255,255])
 
 # in RGB
-# lower_red = np.array([150,0,0], dtype="uint8")
-# upper_red = np.array([255,75,75], dtype="uint8")
-# lower_blue = np.array([0,0,100], dtype="uint8")
-# upper_blue = np.array([100,100,255], dtype="uint8")
-# lower_green = np.array([0,75,0], dtype="uint8")
-# upper_green = np.array([75,255,75], dtype="uint8")
-# lower_yellow = np.array([150,150,0], dtype="uint8")
-# upper_yellow = np.array([255,255,75], dtype="uint8")
+lower_red = np.array([150,0,0], dtype="uint8")
+upper_red = np.array([255,75,75], dtype="uint8")
+lower_blue = np.array([0,0,100], dtype="uint8")
+upper_blue = np.array([100,100,255], dtype="uint8")
+lower_green = np.array([0,75,0], dtype="uint8")
+upper_green = np.array([75,255,75], dtype="uint8")
+lower_yellow = np.array([150,150,0], dtype="uint8")
+upper_yellow = np.array([255,255,75], dtype="uint8")
 
 # Create the different masks using the boundaries set before
-mask_red_end = cv2.inRange(im_array_hsv,lower_red_end,upper_red_end)
-mask_red = cv2.inRange(im_array_hsv,lower_red,upper_red)
-mask_blue = cv2.inRange(im_array_hsv,lower_blue, upper_blue)
-mask_green = cv2.inRange(im_array_hsv,lower_green, upper_green)
-mask_yellow = cv2.inRange(im_array_hsv,lower_yellow, upper_yellow)
+#mask_red_end = cv2.inRange(im_array_hsv,lower_red_end,upper_red_end)
+mask_red = cv2.inRange(im_array,lower_red,upper_red)
+mask_blue = cv2.inRange(im_array,lower_blue, upper_blue)
+mask_green = cv2.inRange(im_array,lower_green, upper_green)
+mask_yellow = cv2.inRange(im_array,lower_yellow, upper_yellow)
 
 # Add the two masks for red as their are in opposite ends of the HSV spectrum
-mask_red = cv2.bitwise_or(mask_red,mask_red_end)
+#mask_red = cv2.bitwise_or(mask_red,mask_red_end)
 
 
 # print("Mask Green shape:", mask_green.shape)
@@ -408,16 +408,30 @@ res_image_circle_yellow = cv2.circle(masked_yellow_median_opening,(yellow_center
 center_point = [int((red_center[1] + blue_center[1] + green_center[1] + yellow_center[1])/4), int((red_center[0] + blue_center[0] + green_center[0] + yellow_center[0])/4)]
 
 # # Draw a circle in the center of the of 4 colored markers
-res_image_circle_center = cv2.circle(masked_yellow_median_opening,(center_point[0],center_point[1]),30,(255,255,255),-60)
+#res_image_circle_center = cv2.circle(masked_yellow_median_opening,(center_point[0],center_point[1]),30,(255,255,255),-60)
 
 # Draw circle in center of image
-res_image_center = cv2.circle(masked_yellow_median_opening,(image_center[1],image_center[0]),30,(0,0,255),-60)
+#res_image_center = cv2.circle(masked_yellow_median_opening,(image_center[1],image_center[0]),30,(0,0,255),-60)
 
 # Add the different images together
-res_image_circle = res_image_circle_red + res_image_circle_blue + res_image_circle_green + res_image_circle_yellow + res_image_circle_center + res_image_center
+res_image_circle = res_image_circle_red + res_image_circle_blue + res_image_circle_green + res_image_circle_yellow
 
+# blue1 = str(blue_center[1])
+# blue2 = str(blue_center[0])
+# blue3 = "("+blue1 + "," + blue2+ ")"
+
+# red = "("+str(red_center[1])+ "," + str(red_center[0]) + ")"
+# yellow = "(" + str(yellow_center[1]) + "," + str(yellow_center[0]) + ")"
+# green = "(" + str(green_center[1]) + "," + str(green_center[0]) + ")"
+
+# cv2.putText(res_image_circle, blue3, (blue_center[1]-90,blue_center[0]-100), cv2.FONT_HERSHEY_COMPLEX_SMALL, 7, (255,255,255), 3)
+# cv2.putText(res_image_circle, red, (red_center[1]-90,red_center[0]-100), cv2.FONT_HERSHEY_COMPLEX_SMALL, 7, (255,255,255), 3)
+# cv2.putText(res_image_circle, yellow, (yellow_center[1]-600,yellow_center[0]-100), cv2.FONT_HERSHEY_COMPLEX_SMALL, 7, (255,255,255), 3)
+# cv2.putText(res_image_circle, green, (green_center[1]-600,green_center[0]-100), cv2.FONT_HERSHEY_COMPLEX_SMALL, 7, (255,255,255), 3)
+
+cv2.imwrite("/home/christian/Drone_project/P7-751/camera/src/Image/In_RGB.png", res_image)
 # Rezise because opencv is lazy
-res_image_circle = cv2.resize(res_image_circle, [960,540])
+res_image_circle = cv2.resize(res_image, [940,560])
 
 
 #median = cv2.medianBlur(res_image, 5)
@@ -439,6 +453,11 @@ cv2.waitKey(0)
 #cv2.imshow("yellow",masked_yellow)
 #cv2.waitKey(0)
 
+#img = Image.open("/home/christian/Drone_project/P7-751/camera/src/Image/newimage.jpg")
+#img = np.array(img)
+#img = cv2.resize(img, (1920,1080))
+
+#cv2.imwrite("/home/christian/Drone_project/P7-751/camera/src/Image/HSV.png",img)
 
 
 

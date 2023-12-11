@@ -19,8 +19,8 @@ def Calibrate():
     img_points = []
     
     # Prepare expected object 3D object points (0,0,0), (1,0,0) ...
-    object_points = np.zeros((7*7,3), np.float32)
-    object_points[:,:2] = np.mgrid[0:7, 0:7].T.reshape(-1,2)
+    object_points = np.zeros((6*8,3), np.float32)
+    object_points[:,:2] = np.mgrid[0:6, 0:8].T.reshape(-1,2)
     object_points = object_points*square_size
     
     fnames = glob.glob('camera/src/Images/'+'*.'+'jpg')
@@ -46,7 +46,7 @@ def Calibrate():
             
             print("drawing the corners")
             # Draw the corners
-            drawn_img = cv2.drawChessboardCorners(img, (7,7), corners, ret)
+            drawn_img = cv2.drawChessboardCorners(img, (6,8), corners, ret)
             # Uncomment the below code (43-47) if you want to visualize the detected corners
             drawn_img = cv2.resize(drawn_img, (500,500))
             cv2.namedWindow("main", cv2.WINDOW_NORMAL)
