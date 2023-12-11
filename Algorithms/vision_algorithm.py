@@ -14,74 +14,69 @@ class VisionAlgorithm:
         self.intrinsic_matrix = np.array([[2770.28, 0, 1602.71], [0, 2765.57, 1200.56], [0,0,1.0]])
 
         # Projection matrix 3x3
-        self.proj_mat = np.array([[(self.f * 3.68)/1920, 0, 0,0], [0, (self.f*2.76)/1080, 0,0], [0, 0, 1,0]])
+        self.proj_mat = np.array([[(self.f * 3.68)/1920, 0, 0], [0, (self.f*2.76)/1080, 0], [0, 0, 1]])
 
         # Pixels limits for Raspberry Pi V2.1 IMX219 sensor, taken from https://www.raspberrypi.com/documentation/accessories/camera.html
         self.u_lim = [0, 3280]
         self.v_lim = [0, 2464]
 
-        self.points = np.array([[20, 20, 0], [8.7, 20, 0], [20, 7, 0], [8.7, 8, 0]]).reshape(-1, 3)
+        self.points = np.array([[20, 20, 0], [8.7, 20, 0], [20, 7, 0], [8.7, 8, 0], [31.3, 31.1, 0], [20, 31.1, 0]]).reshape(-1, 3)
 
     def _reprojection_func(self, params, points, init_rot):
         print(f"Params, T: {params[:3]}")
         T = params[:3]
         print(f"T: {T}")
-        dR = (expm(np.cross(np.eye(3), np.array(params[3:6].T))))*R
+        dR = (expm(np.cross(np.eye(3), np.array(params[3:6].T))))*init_rot
         print(f"Delta Rotation:  {dR}")
-        reprojection_error = 0
-        for point in range(0, 1, self.points.shape[0]):
-            proj_points = self._project_points(self.points[point], T, dR)
-            print(f"Project points:  {proj_points}")
-            reprojection_error += np.linalg.norm(points[point].T - proj_points) / self.points.shape[0]
-            print(f"Reprojection error:  {reprojection_error}")
+        proj_points = self._project_points(self.points, T, dR)
+        print(f"Project points:  {proj_points}")
+        dif_points = points - proj_points.transpose()
+        print(f"Points differnce: {dif_points}")
+        reprojection_error = np.linalg.norm(dif_points, axis=1)
+        print(f"Reprojection error:  {reprojection_error}")
         return reprojection_error
 
-    def _project_points(self, point, T, R):
-        #proj_matrix = np.dot(self.proj_mat, R.T)
+    def _project_points(self, points, T, R):
+        proj_matrix = np.dot(self.proj_mat, R.T)
         #print(f"Projection matrix: {proj_matrix}")
-        homo_coords = np.dot(R.transpose(), (point[:3]-T))
-
-
-
-
-        # trans = np.hstack([R, T.reshape(-1,1)])
-        #
-        # trans = np.vstack([trans, [0,0,0,1]])
-        #
-        # homo_coords = self.proj_mat.dot(trans.dot(np.vstack([point.reshape(-1,1),1])))
+        transl_points = points.transpose()-T.reshape((3,1))
+        print(f"Translated points: {transl_points.transpose()}")
+        homo_coords = np.dot(R, transl_points)
 
 
         print(f"Homogeneous coordinates:  {homo_coords}")
-        pixel_pose = homo_coords[:2]
+        pixel_pose = homo_coords[:2].transpose()
         print(f"Updated pixel pose: {pixel_pose}")
         return pixel_pose.T
 
 
     def minimize(self, pixel_pose, R, T, omega):
         print(f"Before pixel pose: {pixel_pose}")
-        pixel_pose = np.reshape(pixel_pose, (2, 4)).T
+        pixel_pose = np.reshape(pixel_pose, (2, -1)).T
         print(f"Pixel pose:  {pixel_pose}")
         print(f"R:  {R}")
         print(f"T:  {T}")
         print(f"omega:  {omega}")
         init_params = np.array([T[0], T[1], T[2], omega[0], omega[1], omega[2]])
         print(f"init_params:  {init_params}")
-        result = least_squares(self._reprojection_func, init_params, args=(pixel_pose, R))
+        result = least_squares(self._reprojection_func, init_params, args=(pixel_pose, R), method='lm')
         return result
 
 if __name__ == '__main__':
     vision = VisionAlgorithm()
 
 
-    pixel_coords_red = np.array([770, 620])
-    pixel_coords_blue = np.array([455, 620])
-    pixel_coords_green = np.array([776, 455])
-    pixel_coords_yellow = np.array([620, 620])
+    pixel_coords_red = np.array([770.0, 620.0])
+    pixel_coords_blue = np.array([455.0, 620.0])
+    pixel_coords_green = np.array([776.0, 455.0])
+    pixel_coords_yellow = np.array([620.0, 620.0])
+    pixel_coords_pink = np.array([770.0+(770.0-455.0), 620.0+(770.0-445.0)])
+    pixel_coords_fawk_green = np.array([455.0+(770.0-455.0), 620.0+(770.0-445.0)])
 
-    pixel_coords = np.append((pixel_coords_red), (pixel_coords_blue, pixel_coords_green, pixel_coords_yellow))
+    pixel_coords = np.append((pixel_coords_red), (pixel_coords_blue, pixel_coords_green, pixel_coords_yellow, pixel_coords_pink, pixel_coords_fawk_green))
     print(pixel_coords)
     R = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
-    T = np.array([0.0, 0.0, 1000.0])
+    T = np.array([0.0, 0.0, 1.0])
 
     omega = np.array([0.1,0.1,0.1])
 
