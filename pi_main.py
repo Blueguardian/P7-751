@@ -9,7 +9,7 @@ import sys
 
 from Communication.xmlhandler import XMLhandler
 from Communication.tcp_server import TCPServer
-from Communication.Python_serial_com import Teensy_comm
+from Python_Serial_Com import Teensy_comm
 
 # Global variables declaration
 query_pic = 0
@@ -66,13 +66,13 @@ object_points = np.array([red,
 
 
 def takePic(picam2, camera_config):
-    print("im in takepic")
+    # print("im in takepic")
     
     #cv2.startWindowThread()
     #picam2.start_preview(Preview.NULL)
     
     global query_pic
-    print("Taking picture...")
+    # print("Taking picture...")
 
     #time.sleep(0.2)
     #image = picam2.capture_image("main")
@@ -86,11 +86,11 @@ def takePic(picam2, camera_config):
     #     query_pic += 1
     #     print("Took reference picture...")
     #if query_pic == 1:
-    print("query pic = 1")
+    # print("query pic = 1")
     query = picam2.capture_array('main')
     query = cv2.resize(query,[1080,1920])
-    print("Took query picture...")
-    print("Done taking picture!")
+    # print("Took query picture...")
+    # print("Done taking picture!")
     return query
 
 # def phantomMarker(red,blue,green,yellow):
@@ -119,7 +119,7 @@ def imageProc(image):
     #print(image)
 
     
-    print("starting image magic...")
+    # print("starting image magic...")
     # Convert to HSV
     image_hsv = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
 
@@ -155,7 +155,7 @@ def imageProc(image):
 
     # cv2.imshow("blue",masked_blue_median_opening)
     # cv2.waitKey(0)
-    print("Abracadabra it its now filtered...")
+    # print("Abracadabra it its now filtered...")
 
     # transpose the array and remove zero elements
     mask_red_filtered = np.transpose(np.nonzero(masked_red_median_opening[:,:,0] > 0)) 
@@ -166,19 +166,19 @@ def imageProc(image):
 
     if mask_red_filtered.size == 0:
         
-        print("Mask red was 0, exiting function...")
+        # print("Mask red was 0, exiting function...")
         return dummy_return
     if mask_blue_filtered.size == 0:
         
-        print("Mask blue was 0, exiting function...")
+        # print("Mask blue was 0, exiting function...")
         return dummy_return
     if mask_green_filtered.size == 0:
         
-        print("Mask green was 0, exiting function...")
+        # print("Mask green was 0, exiting function...")
         return dummy_return
     if mask_yellow_filtered.size == 0:
         
-        print("Mask yellow was 0, exiting function...")
+        # print("Mask yellow was 0, exiting function...")
         return dummy_return
 
 
@@ -205,7 +205,7 @@ def imageProc(image):
     yellow_y_max =np.max(mask_yellow_filtered[:, 1])
     yellow_y_min =np.min(mask_yellow_filtered[:, 1])
 
-    print("Calculated middle points...")
+    # print("Calculated middle points...")
     # Calculate the center of each color marker
     red_center = [int((red_x_max - red_x_min)/2 + red_x_min), int((red_y_max - red_y_min)/2 + red_y_min)]
     blue_center = [int((blue_x_max - blue_x_min)/2 + blue_x_min), int((blue_y_max - blue_y_min)/2 + blue_y_min)]
@@ -217,20 +217,20 @@ def imageProc(image):
 
     center_coords = np.array([red_center[0],red_center[1],blue_center[0],blue_center[1],green_center[0],green_center[1],yellow_center[0],yellow_center[1]])
 
-    print("Calculated center point and finished magic!")
+    # print("Calculated center point and finished magic!")
     
     return center_coords
 
 
 def calculateDifference(center_point_reference,center_point_query):
-    print("Calculating difference in center point...")
+    # print("Calculating difference in center point...")
     calc_diff_x = center_point_reference[1] - center_point_query[1]
     calc_diff_y = center_point_reference[0] - center_point_query[0]
 
     euc_dist = np.sqrt(((image_center[1]- center_point_query[1])*(image_center[1]- center_point_query[1]))+((image_center[0]-center_point_query[0])*(image_center[0]-center_point_query[0])))
     calculated_difference = [calc_diff_x,calc_diff_y]
-    print("Done calculating difference! It is:", calculated_difference)
-    print("Euclidean Distance:",euc_dist)
+    # print("Done calculating difference! It is:", calculated_difference)
+    # print("Euclidean Distance:",euc_dist)
     return calculated_difference
 
 def calculateRotationTranslation(center_coords_ref,center_coords_query):
@@ -247,15 +247,15 @@ def calculateRotationTranslation(center_coords_ref,center_coords_query):
     
     succes, rvec, tvec = cv2.solvePnP_(object_points, image_points, k_instrinsic, dist_coef, flags = 0)
 
-    print(object_points)
-    print("rotation vector:", rvec)
-    print("Translational vector:", tvec)
+    # print(object_points)
+    # print("rotation vector:", rvec)
+    # print("Translational vector:", tvec)
     return rvec, tvec
 
     
 def image_acq_proc(lock, queue):
     
-    print("im in image acq and processing")
+    # print("im in image acq and processing")
     global query_img
     script_dir = os.path.dirname(__file__)
     rel_path = "Image"
@@ -272,7 +272,7 @@ def image_acq_proc(lock, queue):
         #im_reference = np.array(Image.open(str(abs_file_path)+"/Referenceimage.jpg"))
         #im_query = np.array(Image.open(str(abs_file_path)+"/Queryimage.jpg"))
         end = time.time()
-        print(end-start)
+        # print(end-start)
         #cv2.imshow("im_query",im_reference)
         # if query_img == 0:
         #     center_point_reference, center_coords_ref = imageProc(im_reference)
@@ -292,15 +292,15 @@ def image_acq_proc(lock, queue):
             lock.acquire()
             queue.put(image_data)
             lock.release()
-            print(image_data)
+            # print(image_data)
             continue
         
 
         center_coords_query = center_coords_query_value
 
-        print(center_coords_query)
+        # print(center_coords_query)
         end_image_proc = time.time()
-        print("image proc:",end_image_proc - start_image_proc)
+        # print("image proc:",end_image_proc - start_image_proc)
 
         # calculateRotationTranslation(center_coords_ref,center_coords_query)
         image_data = center_coords_query[0]
@@ -318,22 +318,32 @@ def comm(lock, queue):
     image_data = None
     teensy = Teensy_comm("/dev/ttyACM0")
     xml = XMLhandler()
+    data_ekf = np.zeros((1, 11))
     while True:
-        data=teensy.receive_send("command")
-        if not isinstance(data, str):
-            server.sendData(data)  # Receive data
+        data=teensy.receive_send(xml.process_xml(data_ekf).decode())
+        if data is not None:
+            # if not isinstance(data, str):
+            server.sendData(data, 'IMU')  # Receiv
             time.sleep(0.25)
-        data_ekf = server.receiveData()
-        if data_ekf is not None:
-            data = teensy.receive_send(xml.process_xml(data_ekf).decode())
+            data_ekf = server.receiveData()
+            if isinstance(data_ekf, str):
+                data_ekf = np.zeros((1, 11))
+            else:
+                data_ekf = data_ekf[1]
+                print(data_ekf)
+
+            # if data_ekf is not None:
+            #     data = teensy.receive_send(xml.process_xml(data_ekf).decode())
+
+
         if lock.acquire(block=False):
             if not queue.empty():
-                image_data = np.array([queue.get()])
+                image_data = queue.get()
                 lock.release()
                 if isinstance(image_data, str): # If it is a string (An error)
                     continue
                 else:
-                    server.sendData(image_data)
+                    server.sendData(image_data, 'image')
         else:
             lock.release()
             continue

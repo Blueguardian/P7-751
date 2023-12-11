@@ -67,32 +67,33 @@ if __name__ == "__main__":
 
     np.set_printoptions(suppress=True)
 
-    teensy = Teensy_comm(port="COM3")
+    teensy = Teensy_comm()
+    teensy.check_ports()
 
-    start = time.time()
-    mode_timer = time.time()
+    # start = time.time()
+    # mode_timer = time.time()
 
-    try:
-        while True:
+    # try:
+    #     while True:
                 
-            # Example of alternating command (led transitions between blinking and of each 5 seconds.
-            if(time.time()-mode_timer < 5):
-                command = "command: blink_enabled"
-            elif(time.time()-mode_timer < 10):
-                command = "command: blink_disabled"
-            else:
-                mode_timer = time.time()
+    #         # Example of alternating command (led transitions between blinking and of each 5 seconds.
+    #         if(time.time()-mode_timer < 5):
+    #             command = "command: blink_enabled"
+    #         elif(time.time()-mode_timer < 10):
+    #             command = "command: blink_disabled"
+    #         else:
+    #             mode_timer = time.time()
 
-            # Receiving data from Teensy and sending a command
-            data=teensy.receive_send(command)
+    #         # Receiving data from Teensy and sending a command
+    #         data=teensy.receive_send(command)
 
-            if data is not None:
-                print(data)
+    #         if data is not None:
+    #             print(data)
 
 
-            print("time:", time.time()-start, "s\n")
-            start = time.time()
+    #         print("time:", time.time()-start, "s\n")
+    #         start = time.time()
 
-    except KeyboardInterrupt:
-        None
+    # except KeyboardInterrupt:
+    #     None
 

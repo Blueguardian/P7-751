@@ -3,6 +3,7 @@
 # All rights reserved, can be copied under license.
 
 import socket
+import errno
 from xmlhandler import XMLhandler
 
 class TCPServer:
