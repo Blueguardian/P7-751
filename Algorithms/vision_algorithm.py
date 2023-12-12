@@ -51,6 +51,7 @@ class VisionAlgorithm:
 
         return reprojection_error
 
+
     def _project_points(self, points, T, R):
         print(f"Original points: {points}")
         transl_points = points.transpose().copy()-T.reshape((3,1)).copy()
