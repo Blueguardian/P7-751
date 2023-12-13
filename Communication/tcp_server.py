@@ -1,15 +1,13 @@
 # Designed by group 7-751, Aalborg University, 2023.
 # For purpose of project, concerning tethered drone control.
 # All rights reserved, can be copied under license.
-import errno
-import socket, math
-import numpy as np
-from xmlhandler import XMLhandler
-from time import sleep
 
-class tcp_client:
+import socket
+from xmlhandler import XMLhandler
+
+class TCPServer:
     """
-    TCP client class for handling serverside message retrieval and sending of xml and message data, along with parsing
+    TCP server class for handling serverside message retrieval and sending of xml and message data, along with parsing
     of received xml data.
     Dependencies:
         socket and xmlhandler(included)
@@ -19,17 +17,20 @@ class tcp_client:
         Create own protocol for sending and receiving
         More robust receive-methods of data and more data types
         Clean-up and optimization
+        Multi-client support
     """
 
     # Fixed class attributes
-    __PARSER = XMLhandler() #
-    __serverSocket = None
+    __PARSER = XMLhandler() # XML parser and processer (Handler) object
+
+    # clientsocket placed here to always remain in scope
+    __clientSocket = None
 
     def __init__(self, host='127.0.0.1', port=15567, receive_size=65536, format='utf-8', sock_rep=socket.AF_INET,
                  sock_type=socket.SOCK_STREAM, rec_len=10):
         """
-        Initialiser for TCP-client class, sets values specified for object attibutes and initialised the connection
-        between the client and the server. Optional inputs can be used for changing default values.
+        Initialiser for TCP-server class, sets values specified for object attibutes and initialised the connection
+        between the server and the client. Optional inputs can be used for changing default values.
         :param host: Host IP-address (String): Default value: '127.0.0.1' - Loopback
         :param port: Communication port (Int): Default value: 15567 - port above 1024
         :param receive_size: Size of data retrieval buffer (Int): Default value: 65536 -  64kB largest allowed for TCP
@@ -42,30 +43,43 @@ class tcp_client:
         # Assign attributes parameter values
         self.__HOST = host
         self.__PORT = port
-        self.__SIZE = receive_size # Not currently used
+        self.__SIZE = receive_size
         self.__FORMAT = format
         self.__LEN_SIZE = rec_len  # Has to agree on both sides
-        self.__serverSocket = socket.socket(sock_rep, sock_type)
+        self.__clientSocket = socket.socket(sock_rep, sock_type)
 
         # Initialise socket
-        self.__serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.__serverSocket.connect((self.__HOST, self.__PORT))
-        print(f"Connected to server at: addr: {self.__HOST}:{self.__PORT}")
+        self.__clientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.__clientSocket.bind((self.__HOST, self.__PORT))
+        self.__clientSocket.listen()
+
+        # Wait for a connection
+        while True:
+            self.connection, self.address = self.__clientSocket.accept()
+            if self.connection != 0 and self.address != 0:
+                break
+            else:
+                continue
+
+        # Set socket to non-blocking
+        self.connection.setblocking(False)
+        print("Accepted connection from remote client at " + str(self.address))
 
     def __del__(self):
         """
         Destructor for instances of class, to ensure that sockets are closed before program exit.
         :return: None
         """
-        self.__serverSocket.close()
+        self.__clientSocket.close()
+        return None
 
-    def __receive_length(self):
+    def __receive_length(cls):
         """
         Object method __receive_length used to obtain the length of the incoming data
         :return: int: length of incoming message or data
         """
-        data = self.__serverSocket.recv(self.__LEN_SIZE)
-        data = data.decode(self.__FORMAT)
+        data = cls.connection.recv(cls.__LEN_SIZE)
+        data = data.decode(cls.__FORMAT)
         try:
             length = eval(data.split('-')[1].lstrip("0"))
         except Exception as e:
@@ -79,10 +93,11 @@ class tcp_client:
         :return: string: message
         """
         try:
-            data = self.__serverSocket.recv(self.__SIZE)
+            data = self.connection.recv(self.__LEN_SIZE)
         except socket.error as e:
             if e.errno == errno.ECONNRESET:
-                self.__init__(self.__HOST, self.__PORT+1, self.__SIZE, self.__FORMAT, socket.AF_INET, socket.SOCK_STREAM, self.__LEN_SIZE)
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
             elif e.errno == errno.ECONNABORTED:
                 self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
                               socket.SOCK_STREAM, self.__LEN_SIZE)
@@ -98,7 +113,6 @@ class tcp_client:
                 data = data.decode(self.__FORMAT)
                 return data
 
-
     def receiveData(self):
         """
         Instance method, used for receiving data from the socket stream, utilises internal methods and embedded class for
@@ -109,7 +123,7 @@ class tcp_client:
             length = self.__receive_length()
             if isinstance(length, str):
                 return "LENGTH_INVALID error"
-            data = self.__serverSocket.recv(length)
+            data = self.connection.recv(length)
         except socket.error as e:
             if e.errno == errno.ECONNRESET:
                 self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
@@ -144,32 +158,7 @@ class tcp_client:
             out_data = length + out_data
             if not isinstance(out_data, bytes):
                 out_data = out_data.encode(self.__FORMAT)
-            checkout = self.__serverSocket.send(out_data)
-        except socket.error as e:
-            if e.errno == errno.ECONNRESET:
-                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
-                              socket.SOCK_STREAM, self.__LEN_SIZE)
-            elif e.errno == errno.ECONNABORTED:
-                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
-                              socket.SOCK_STREAM, self.__LEN_SIZE)
-            elif e.errno == errno.ECONNREFUSED:
-                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
-                              socket.SOCK_STREAM, self.__LEN_SIZE)
-            else:
-                return "SOCKET_TIMEOUT error"
-        else:
-            return checkout
-
-
-    def sendMsg(self, msg):
-        """
-        Instance method, used for sending messages to the client, formatted as strings. Returns error if socket timed out
-        :param msg: The message to send, assumed to be a string
-        :return: Error message if socket timed out, None if successful
-        """
-        try:
-            msg = msg.encode(self.__FORMAT)
-            self.__serverSocket.send(msg)
+            self.connection.sendall(out_data)
         except socket.error as e:
             if e.errno == errno.ECONNRESET:
                 self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
@@ -185,21 +174,55 @@ class tcp_client:
         else:
             return None
 
+    def sendMsg(self, msg):
+        """
+        Instance method, used for sending messages to the client, formatted as strings. Returns error if socket timed out
+        :param msg: The message to send, assumed to be a string
+        :return: Error message if socket timed out, None if successful
+        """
+        try:
+            out_data = msg.encode(self.__FORMAT)
+            self.connection.send(out_data)
+        except socket.error as e:
+            if e.errno == errno.ECONNRESET:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNABORTED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            elif e.errno == errno.ECONNREFUSED:
+                self.__init__(self.__HOST, self.__PORT + 1, self.__SIZE, self.__FORMAT, socket.AF_INET,
+                              socket.SOCK_STREAM, self.__LEN_SIZE)
+            else:
+                return "SOCKET_TIMEOUT error"
+        else:
+            return None
+
+
 """Test setup for the classes"""
 """Receives 'ack' before continuing to ensure a fully established connection"""
-"""Sends different types of data to the server for processing"""
-# Real ip host='192.168.0.101'
-# Instantiate client object
-# client = tcp_client_test()
+"""Waits for data and only prints it if the type is not a string (Not and error)"""
+
+#Instantiate server object instance
+# server = TCPServer()
 #
-# # Still not tested for other types than ndarray
-#
-# # "Main function" only used due to class definition above
+# import numpy as np
+# import math
+# from time import sleep
+# #"Main function" only used due to class definition above
 # if __name__ == "__main__":
-#
 #     origin = None
 #     rcv_data = None
-#     # Define different data type for testing the setup
+#
+#     while origin != "final":
+#         rcv_data = server.receiveData() # Receive data
+#         if isinstance(rcv_data, tuple):
+#             origin = rcv_data[0]
+#             rcv_data = rcv_data[1]
+#             print(f"Origin: {origin}")
+#             print(rcv_data)
+#         else:
+#             continue
 #     data_fun1 = np.zeros((5, 5))
 #     data_fun2 = np.zeros((5, 5, 2))
 #     data_fun3 = np.zeros((3, 1))
@@ -218,34 +241,21 @@ class tcp_client:
 #     data_fun5[2, 3] = math.cos(50) * 112.0
 #     data_fun5[3, 3] = 1.0
 #     i = 0  # Iterator
+#     # Wait 2 seconds before sending all the data
 #     while i < 5:
 #         if i < 1:
-#             check = client.sendData(data_fun1)  # Send 2D Matrix
+#             check = server.sendData(data_fun1)  # Send 2D Matrix
 #             print(check)
 #         elif i == 1:
-#             check = client.sendData(data_fun2)  # Send 3D Matrix
+#             check = server.sendData(data_fun2)  # Send 3D Matrix
 #             print(check)
 #         elif i == 2:
-#             check = client.sendData(data_fun3)  # Send Vector
+#             check = server.sendData(data_fun3)  # Send Vector
 #             print(check)
 #         elif i == 3:
-#             check = client.sendData(data_fun4)  # Send Value
+#             check = server.sendData(data_fun4)  # Send Value
 #             print(check)
 #         elif i > 3 and i < 5:
-#             check = client.sendData(data_fun5, "final")  # Send transformation matrix
+#             check = server.sendData(data_fun5, "final")  # Send transformation matrix
 #             print(check)
 #         i += 1
-#     while origin != "final":
-#         rcv_data = client.receiveData()
-#         if isinstance(rcv_data, tuple):
-#             origin = rcv_data[0]
-#             rcv_data = rcv_data[1]
-#             print(f"Origin: {origin}")
-#             print(rcv_data)
-#         else:
-#             continue
-#         if isinstance(rcv_data, str):  # If it is a string (An error)
-#             continue
-#         else:
-#             print(origin)
-#             print(rcv_data)  # Otherwise print the received data
