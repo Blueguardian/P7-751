@@ -3,7 +3,6 @@
 # All rights reserved, can be copied under license.
 
 import socket
-import errno
 from xmlhandler import XMLhandler
 
 class TCPServer:
@@ -83,7 +82,7 @@ class TCPServer:
         data = data.decode(cls.__FORMAT)
         try:
             length = eval(data.split('-')[1].lstrip("0"))
-        except Exception.with_traceback():
+        except Exception as e:
             return "Faulty length"
         else:
             return length
