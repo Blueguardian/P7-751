@@ -2,10 +2,10 @@
 # For purpose of project, concerning tethered drone control.
 # All rights reserved, can be copied under license.
 import errno
-import socket, math
+import socket, math, errno
 import numpy as np
-from xml_handler import XMLhandler
 from time import sleep
+from xmlhandler import XMLhandler
 
 class tcp_client:
     """
@@ -139,6 +139,7 @@ class tcp_client:
         :return: Error if socket timed out and None if successful
         """
         try:
+     
             out_data = self.__PARSER.process_xml(data, origin)
             length = b'-' + f"{len(out_data)}".zfill(8).encode(self.__FORMAT) + b'-'
             out_data = length + out_data

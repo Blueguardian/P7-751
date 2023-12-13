@@ -21,13 +21,13 @@ class Pose_tracker:
         self._y_ang_vel = 0
         self._z_ang_vel = 0
 
-        self.rot_mat = None
+        self.rot_mat = np.array([[0,0,0], [0,0,0], [0,0,0]])
         self.time_prior = 0
         self.time_now = 0
         self.delta_time = 0
 
     def get_transform(self):
-        return np.hstack([self.rot_mat, np.array([self._x, self._y, self._z]).T])
+        return np.hstack([self.rot_mat, np.array([self._x, self._y, self._z]).reshape(-1, 1)])
 
     def get_ang_vel(self):
         return np.array([self._x_ang_vel, self._y_ang_vel, self._z_ang_vel]).T
@@ -39,7 +39,7 @@ class Pose_tracker:
     def get_time(self):
         return self.delta_time
 
-    def update_values_EFK(self, vec):
+    def update_values_EKF(self, vec):
         self._x = vec[0]
         self._y = vec[1]
         self._z = vec[2]
@@ -48,7 +48,7 @@ class Pose_tracker:
         self._z_vel = vec[5]
 
         yaw = np.array(
-            [[1, 0, 0], [0, cos(vec[8]), -sin(vec[8])], [0, sin(vec[8], cos(vec[8]))]])
+            [[1, 0, 0], [0, cos(vec[8]), -sin(vec[8])], [0, sin(vec[8]), cos(vec[8])]])
         pitch = np.array(
             [[cos(vec[7]), 0, sin(vec[7])], [0, 1, 0], [-sin(vec[7]), 0, cos(vec[7])]])
         roll = np.array(

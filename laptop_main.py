@@ -174,7 +174,41 @@ def Com(vision_pipe, ekf_pipe):
 
     #Instantiate client object instance
     client = tcp_client(host='192.168.0.102') # Standard host IP, only change if you know what you are doing
+
+    # Instantiate the GUI and Pose tracker objects
+    GUI = Drone_GUI()
     pose = Pose_tracker()
+
+    # Initialise GUI variables
+    execution_state = 0
+    desired_altitude = 0
+
+    # Update the GUI and retrieve relevant data and events and print the "LED"
+    events, values = GUI.getinput()
+    GUI.SetLED('online', 'red')
+
+    # Infinite while loop for continuous process execution
+    while True:
+        # Update the GUI and retrieve relevant data and events
+        events, values = GUI.getinput()
+
+        # If the 'Abort' button is pressed stop the drone system
+        # and update relevant GUI components
+        if events == 'Abort':
+            execution_state = 0
+            GUI.SetLED('online', 'red')
+
+        # Else if the 'Execute' button is pressed start the drone system
+        # and update relevant GUI components
+        elif events == 'Execute':
+            execution_state = 1
+            GUI.SetLED('online', 'green')
+
+        # Else if the user has entered a desired altitude and pressed the 'Submit' button, update the
+        # value sent to the control system
+        elif events == 'Submit':
+            desired_altitude = float(values[0])
+
 
         # Retrieve data from the server
         data = client.receiveData()
@@ -237,7 +271,7 @@ if __name__ == '__main__':
     # Named as from_to_pipe (Wierd naming convention i know)
     vision_com_pipe, com_vision_pipe = multiprocessing.Pipe()
     vision_ekf_pipe, ekf_vision_pipe = multiprocessing.Pipe()
-    ekf_com_pipe, com_ekf_pipe = multiprocessing.Pipe()
+    ekf_com_pipe, com_ekf_pipe       = multiprocessing.Pipe()
 
     # Process initialisation, targets are the above functions handling each individual process and the args are
     # the arguments for the function
