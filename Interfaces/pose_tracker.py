@@ -47,15 +47,9 @@ class Pose_tracker:
         self._y_vel = vec[4]
         self._z_vel = vec[5]
 
-        self.rot_mat = Rotation.from_euler("zyx", [vec[-1], vec[-2], vec[-3]]).as_matrix()
+        vec = vec.reshape(1,-1)[0].copy()
 
-        # yaw = np.array(
-        #     [[1, 0, 0], [0, cos(vec[8]), -sin(vec[8])], [0, sin(vec[8]), cos(vec[8])]])
-        # pitch = np.array(
-        #     [[cos(vec[7]+np.pi), 0, sin(vec[7]+np.pi)], [0, 1, 0], [-sin(vec[7]+np.pi), 0, cos(vec[7]+np.pi)]])
-        # roll = np.array(
-        #     [[cos(vec[6]), -sin(vec[6]), 0], [sin(vec[6]), cos(vec[6]), 0], [0, 0, 1]])
-        # self.rot_mat = roll * pitch * yaw
+        self.rot_mat = Rotation.from_euler("zyx", (vec[8], vec[7], vec[6])).as_matrix()
 
     def update_values_data(self, sensor_output):
         sensor_output = sensor_output.reshape(6, 3)

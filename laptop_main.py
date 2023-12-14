@@ -12,6 +12,8 @@ from Algorithms.vision_algorithm import VisionAlgorithm
 from Algorithms.EKF import EKF
 from Communication.tcp_client import tcp_client
 
+
+import matplotlib.pyplot as plt
 import csv
 
 
@@ -44,6 +46,7 @@ def EKF_func(vision_pipe, com_pipe):
     n_readings = 0
     just_do_it = False
 
+    plt.ion()
 
     try:
         # Infinite while loop for continuous process execution
@@ -65,6 +68,7 @@ def EKF_func(vision_pipe, com_pipe):
                             ekf_state = ekf.initialise_ekf(sensor_data)
                             ekf_state1 = ekf1.initialise_ekf(sensor_data)
                             prev_time = current_t
+                            
                         else:
                             dt = current_t - prev_time
                             prev_time = current_t
@@ -90,26 +94,37 @@ def EKF_func(vision_pipe, com_pipe):
                     # Retrieve the data from the pipeline and assign it to the variable
                     data = vision_pipe.recv()
 
+                # print(data)
+
                 # Perform the perception update with the new vision data
                 ekf_state = ekf.measurement_step_vision(data)
+                
 
             if ekf_state is not None:
                 # Send the result to the control system through the communication process
-                #print(np.round(ekf_state,3).reshape(1,-1)[0])
                 
                 if just_do_it:
-                    print(ekf_state.reshape(1,-1)[0], current_t)
+                    # print(ekf_state.reshape(1,-1)[0], current_t)            
+
                     n_readings +=1
                     readings = np.vstack([readings, np.append(ekf_state.reshape(1,-1)[0], current_t)])
                     readings1 = np.vstack([readings1, np.append(ekf_state1.reshape(1,-1)[0], current_t)])
+
+                    plt.plot(readings[:,0], readings[:,1])
+                    plt.grid()
+
+                    plt.draw()
+                    plt.pause(0.001)
+                    plt.clf()
 
 
                     if n_readings % 50 == 0:
                             print("\n",n_readings, "\n")
 
                     if n_readings == 1000:
-                        np.savetxt("imu_and_camera2.csv", readings, delimiter=",")
-                        np.savetxt("only_imu2.csv", readings1, delimiter=",")
+                        None
+                        np.savetxt("imu_and_camera6.csv", readings, delimiter=",")
+                        np.savetxt("only_imu6.csv", readings1, delimiter=",")
 
                     just_do_it = False
 
@@ -171,6 +186,9 @@ def Vision(com_pipe, ekf_pipe):
                     rot_vec = Rotation.from_matrix(rotation_m).as_euler("zyx") # From rotation matrix
                     pose_vec = np.append(translation, rot_vec) # Create a column vector from the results
                     # Send the results to the EKF
+
+                    # print(pose_vec)
+
                     ekf_pipe.send(pose_vec)
 
                     # If the pipeline to communication contains readable data
@@ -215,10 +233,9 @@ def Com(vision_pipe, ekf_pipe):
                 # send the vision algorithm the data along with the
                 # most recent pose and angular velocity measured.
                 if origin == 'image':
+                   # print("points:", data)
                     vision_pipe.send((origin, data))
                     vision_pipe.send(('pose', pose.get_transform()))
-                    # vision_pipe.send(('ang_vel', pose.get_ang_vel()))
-                    # vision_pipe.send(('vel', pose.get_vel()))
 
                 # Else if the origin of the data is from the IMU
                 # update the pose tracker with the values from the gyro and time
@@ -238,18 +255,15 @@ def Com(vision_pipe, ekf_pipe):
                 while ekf_pipe.poll():
                     # Retrieve the data
                     data_ekf = ekf_pipe.recv()
-                    pose.update_values_EKF(data_ekf)
+                    
+                    temp = np.array([0, 0, 0.7, 0, 0, 0, 0, 0, 0]).reshape(-1,1)
+                    pose.update_values_EKF(temp)
 
-                    # Reshape the data to include the execution state and the desired altitude
+                    # pose.update_values_EKF(data_ekf)
                     data_ekf = np.append([1, 1], data_ekf)
 
-                    # # Update the GUI values
-                    # GUI.update_text('data', f"x_pos:\t{data_ekf[0]:.6f}\t\tx_vel:\t{data_ekf[3]:.6f}\t\troll:\t{data_ekf[6]:.6f}\n"
-                    #                         f"y_pos:\t{data_ekf[1]:.6f}\t\ty_vel:\t{data_ekf[4]:.6f}\t\tpitch:\t{data_ekf[7]:.6f}\n"
-                    #                         f"z_pos:\t{data_ekf[2]:.6f}\t\tz_vel:\t{data_ekf[5]:.6f}\t\tyaw:\t{data_ekf[8]:.6f}")
-
-                    # Update the pose tracker
-                    pose.update_values_EKF(data_ekf)
+                    # pose.update_values_EKF(data_ekf)
+                    
 
                 # Send the final data to the control system
                 status = client.sendData(data_ekf, 'EKF')

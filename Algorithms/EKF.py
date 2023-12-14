@@ -306,6 +306,7 @@ class EKF():
 		# Column with the current measurements from the sensors(z).
 		current_z = sensor_measurements.copy()
 
+
 		# Compute column with the predicted sensor measurements.
 		x, y, z, vx, vy, vz, r, p, w = self.X.reshape(1,-1)[0]
 		h_small = np.array([

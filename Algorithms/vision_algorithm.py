@@ -44,9 +44,10 @@ class VisionAlgorithm:
         omega = np.array([0.1,0.1,0.1])
         vel = np.array([0.1,0.1,0.1])
         init_params = np.array([vel[0], vel[1], vel[2], omega[0], omega[1], omega[2]])
-        result = least_squares(self._reprojection_func, init_params, args=(pixel_pose, R, T), ftol=1e-2)
+        result = least_squares(self._reprojection_func, init_params, args=(pixel_pose, R, T), ftol= 1e-2)
         dT = T + result.x[:3]
         dR = expm(np.cross(result.x[3:], np.eye((3))))*R
+
         return dT, dR
 
 
